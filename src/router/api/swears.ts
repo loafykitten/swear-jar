@@ -72,18 +72,6 @@ const POST = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 		})
 	}
 
-	const isDecrement = updateType === 'decrement'
-	const result = isDecrement ? decrementSwears() : incrementSwears()
-
-	if (!result) {
-		const response = `Issue occurred during updateType`
-
-		logger.error(response)
-		return new Response(response, {
-			status: 500,
-		})
-	}
-
 	const pricePerSwear = getPricePerSwear(
 		url.searchParams.get('pricePerSwear') ?? '',
 	)
@@ -93,6 +81,18 @@ const POST = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 		logger.error(response)
 		return new Response(response, {
 			status: 400,
+		})
+	}
+
+	const isDecrement = updateType === 'decrement'
+	const result = isDecrement ? decrementSwears() : incrementSwears()
+
+	if (!result) {
+		const response = `Issue occurred during updateType`
+
+		logger.error(response)
+		return new Response(response, {
+			status: 500,
 		})
 	}
 
@@ -106,7 +106,7 @@ const DELETE = (swearsWorker: Worker) => {
 
 	if (resetSwears()) {
 		logger.warn('Swears reset!')
-		swearsWorker.postMessage({ swears: 0, cost: '$0.00' })
+		swearsWorker.postMessage({ swears: 0, cost: 0 })
 		return new Response('OK')
 	} else {
 		logger.error('Issue occurred during reset!')
