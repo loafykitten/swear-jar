@@ -3,7 +3,8 @@
     "allow": [
       "mcp__firecrawl__firecrawl_scrape",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(tree:*)"
     ]
   }
 }
