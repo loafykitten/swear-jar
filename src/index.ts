@@ -26,3 +26,4 @@ const server = serve<WebSocketData>({
 })
 
 logger.log(`🚀 Server running at ${server.url}`)
+logger.warn(`Using API key: ...${process.env.API_KEY?.slice(-4) ?? '(N/A)'}`)
