@@ -1,7 +1,10 @@
 import { logger } from '@/utils/logger'
 import { Database } from 'bun:sqlite'
 
-export const db = new Database('swears-db.sqlite')
+const isTest = process.env.NODE_ENV === 'test'
+const dbPath = isTest ? ':memory:' : 'swears-db.sqlite'
+
+export const db = new Database(dbPath)
 
 export const initializeDb = () => {
 	try {
