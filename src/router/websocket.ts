@@ -26,7 +26,7 @@ const onClose = (
 	code: number,
 	reason: string,
 ) => {
-	logger.log(`WS connection closed - code: ${code}, reason: ${reason}`)
+	logger.debug(`WS connection closed - code: ${code}, reason: ${reason}`)
 }
 
 const onDrain = (ws: Bun.ServerWebSocket<WebSocketData>) => {
@@ -37,7 +37,7 @@ const onWorkerMessage = (
 	event: MessageEvent,
 	ws: ServerWebSocket<WebSocketData>,
 ) => {
-	logger.log(`Websocket Thread (Worker msg recv)`)
+	logger.debug(`Websocket Thread (Worker msg recv)`)
 
 	try {
 		if (event.data.swears === undefined)

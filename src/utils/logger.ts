@@ -13,6 +13,13 @@ const innerLog = (info: string, prefixColor: InspectColor) =>
 	console.log(`${generatePrefix(prefixColor)} ${info}`)
 
 export const logger = {
+	debug: (info: string) => {
+		if (
+			process.env.NODE_ENV !== 'production' &&
+			process.env.NODE_ENV !== 'test'
+		)
+			innerLog(info, 'green')
+	},
 	log: (info: string) => innerLog(info, 'green'),
 	error: (info: string) => innerLog(info, 'red'),
 	warn: (info: string) => innerLog(info, 'yellow'),

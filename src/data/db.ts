@@ -20,7 +20,7 @@ export const initializeDb = () => {
 }
 
 const createDb = () => {
-	logger.log('Running database initializations...')
+	logger.debug('Running database initializations...')
 
 	db.query(
 		`
@@ -40,5 +40,5 @@ const seedData = () => {
 		.run()
 
 	if (result.changes > 0) logger.warn('Initialized Swears table!')
-	else logger.log('Skipped initialization!')
+	else logger.debug('Skipped initialization!')
 }

@@ -42,7 +42,7 @@ export const SwearsRoutingWS = {
 		if (!result.isValid) {
 			const response = `${result.param} is malformed in API request`
 
-			logger.log(response)
+			logger.warn(response)
 			return new Response(response, {
 				status: 400,
 			})

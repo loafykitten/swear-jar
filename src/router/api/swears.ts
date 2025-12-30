@@ -29,7 +29,7 @@ const finalizeRequest = (pricePerSwear: number) => {
 		cost: calculateSwearsCost(swears, pricePerSwear),
 	}
 
-	logger.log(
+	logger.debug(
 		`Swears Data - swears: ${swearsData.swears}, pricePerSwear: ${pricePerSwear}, cost: ${swearsData.cost}`,
 	)
 
@@ -40,7 +40,7 @@ const finalizeRequest = (pricePerSwear: number) => {
 }
 
 const GET = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
-	logger.log('SwearsAPI (GET)')
+	logger.debug('SwearsAPI (GET)')
 
 	const url = new URL(req.url)
 	const pricePerSwear = getPricePerSwear(
@@ -49,7 +49,7 @@ const GET = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 	if (!pricePerSwear) {
 		const response = 'pricePerSwear is malformed in API request'
 
-		logger.log(response)
+		logger.warn(response)
 		return new Response(response, {
 			status: 400,
 		})
@@ -59,14 +59,14 @@ const GET = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 }
 
 const POST = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
-	logger.log('SwearsAPI (POST)')
+	logger.debug('SwearsAPI (POST)')
 
 	const url = new URL(req.url)
 	const updateType = url.searchParams.get('updateType')
 	if (updateType !== 'decrement' && updateType !== 'increment') {
 		const response = 'updateType is malformed in API request'
 
-		logger.log(response)
+		logger.warn(response)
 		return new Response(response, {
 			status: 400,
 		})
@@ -102,7 +102,7 @@ const POST = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 }
 
 const DELETE = (swearsWorker: Worker) => {
-	logger.log('SwearsAPI (DELETE)')
+	logger.debug('SwearsAPI (DELETE)')
 
 	if (resetSwears()) {
 		logger.warn('Swears reset!')
