@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useURLParams } from '@/hooks/useURLParams'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Props = {
 	swears: number
@@ -12,6 +13,11 @@ const costFormat = Intl.NumberFormat('en-US', {
 })
 
 export default function ProgressBar({ swears, cost, maxCost }: Props) {
+	const { configParams } = useURLParams()
+
+	const [isVisible, setIsVisible] = useState(true)
+	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
 	const actualCost = costFormat.format(cost)
 	const capCost = costFormat.format(maxCost)
 
@@ -20,9 +26,25 @@ export default function ProgressBar({ swears, cost, maxCost }: Props) {
 		return value <= 100 ? value : 100
 	}, [cost, maxCost])
 
+	useEffect(() => {
+		if (!configParams.isAnimated) return
+
+		setIsVisible(true)
+
+		if (timeoutRef.current) clearTimeout(timeoutRef.current)
+
+		timeoutRef.current = setTimeout(() => {
+			setIsVisible(false)
+		}, 8000)
+
+		return () => {
+			if (timeoutRef.current) clearTimeout(timeoutRef.current)
+		}
+	}, [swears, cost, configParams.isAnimated])
+
 	return (
 		<div
-			className="progress-bar"
+			className={isVisible ? 'progress-bar visible' : 'progress-bar'}
 			role="progressbar"
 			aria-valuenow={cost}
 			aria-valuemin={0}
