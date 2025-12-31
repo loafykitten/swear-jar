@@ -1,71 +1,197 @@
-Default to using Bun instead of Node.js.
+# Vox - Python/Textual TUI
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+A Terminal User Interface (TUI) for speech recognition and swear detection, built with Python and Textual.
 
-## APIs
+## Architecture
 
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+- **Language**: Python 3.10+
+- **TUI Framework**: [Textual](https://textual.textualize.io/) - A modern Python TUI framework with CSS-like styling
+- **Dependency Management**: [uv](https://github.com/astral-sh/uv) - Fast Python package installer
+
+## Development Setup
+
+### First Time Setup
+
+```bash
+# Navigate to vox directory
+cd vox
+
+# Create virtual environment
+uv venv
+
+# Install dependencies (including textual)
+uv pip install -e .
+```
+
+### Activate Virtual Environment
+
+```bash
+# Activate the virtual environment
+source .venv/bin/activate
+
+# Or run commands directly with uv
+uv run python src/main.py
+```
+
+### Running the App
+
+```bash
+# With activated venv
+python src/main.py
+
+# Without activating venv
+uv run python src/main.py
+```
+
+## Textual Development Patterns
+
+### Component Structure
+
+Textual uses an App-based architecture with composable widgets:
+
+```python
+from textual.app import App, ComposeResult
+from textual.widgets import Header, Footer, Button
+
+class MyApp(App):
+    """Main application class"""
+
+    CSS = """
+    Screen { align: center middle; }
+    Button { margin: 1; }
+    """
+
+    def compose(self) -> ComposeResult:
+        """Compose the UI"""
+        yield Header()
+        yield Button("Click me")
+        yield Footer()
+
+    def on_button_pressed(self) -> None:
+        """Handle button press events"""
+        self.notify("Button pressed!")
+```
+
+### Styling with CSS
+
+Textual uses CSS-like syntax for styling widgets:
+
+```python
+CSS = """
+Screen {
+    align: center middle;
+    background: $surface;
+}
+
+.title {
+    color: $accent;
+    text-style: bold;
+}
+"""
+```
+
+### Event Handling
+
+Handle events using `on_*` methods:
+
+```python
+def on_key(self, event: events.Key) -> None:
+    """Handle key press events"""
+    if event.key == "q":
+        self.exit()
+```
+
+### Reactive State
+
+Use reactive properties for state management:
+
+```python
+from textual.reactive import reactive
+
+class Counter(Widget):
+    count = reactive(0)
+
+    def watch_count(self, count: int) -> None:
+        """Called when count changes"""
+        self.update(f"Count: {count}")
+```
+
+## Project Structure
+
+```
+vox/
+├── src/
+│   └── main.py          # Main application entry point
+├── pyproject.toml       # Project metadata and dependencies
+├── README.md            # Project overview
+├── .gitignore           # Git ignore patterns
+└── .venv/               # Virtual environment (not in git)
+```
+
+## Dependencies
+
+Core dependencies (defined in `pyproject.toml`):
+- `textual>=0.50.0` - TUI framework
+
+Development dependencies:
+- `pytest>=7.4.0` - Testing framework
+
+## Adding Dependencies
+
+```bash
+# Add runtime dependency
+uv pip install <package>
+# Then update pyproject.toml manually
+
+# Add dev dependency
+uv pip install --dev <package>
+# Then update pyproject.toml under [project.optional-dependencies]
+```
 
 ## Testing
 
-Use `bun test` to run tests.
+```bash
+# Run tests
+uv run pytest
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
-
-test("hello world", () => {
-  expect(1).toBe(1);
-});
+# Run with coverage
+uv run pytest --cov=src
 ```
 
-## TUI (Terminal UI)
+## Textual Developer Tools
 
-This is an Ink TUI application. Use Ink components instead of HTML/CSS.
+Textual includes a dev console for debugging:
 
-**Entry point pattern:**
+```bash
+# Run with dev tools
+textual console
 
-```ts#src/app/App.tsx
-import { render, Text } from 'ink';
-import React from 'react';
-import { Greeting } from '../components/Greeting';
-
-const App = () => <Greeting />;
-
-render(<App />);
+# In another terminal, run your app
+uv run python src/main.py
 ```
 
-**Component pattern:**
+## Common Commands
 
-```tsx#src/components/Greeting.tsx
-import { Text } from 'ink';
-import React from 'react';
+```bash
+# Activate venv
+source .venv/bin/activate
 
-export const Greeting = () => {
-  return <Text>Hello, world!</Text>;
-};
+# Run app
+uv run python src/main.py
+
+# Format code (if black is installed)
+black src/
+
+# Type check (if mypy is installed)
+mypy src/
+
+# Run tests
+pytest
 ```
 
-**Common Ink components:**
-- `<Text>` - Render text with optional styling (color, bold, etc.)
-- `<Box>` - Flexbox container for layout
-- `<Newline>` - Add line breaks
-- `<Spacer>` - Flexible space in layouts
+## Resources
 
-**Running the app:**
-
-```sh
-# Development with hot reload
-bun --hot ./src/index.ts
-
-# Production
-bun ./src/index.ts
-```
-
-For more information, see the Ink documentation: https://github.com/vadimdemedes/ink
+- [Textual Documentation](https://textual.textualize.io/)
+- [Textual Widget Gallery](https://textual.textualize.io/widget_gallery/)
+- [Textual CSS Reference](https://textual.textualize.io/styles/)
+- [uv Documentation](https://github.com/astral-sh/uv)

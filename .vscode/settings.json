@@ -1,0 +1,12 @@
+{
+	"python.defaultInterpreterPath": "${workspaceFolder}/vox/.venv/bin/python",
+	"python.analysis.extraPaths": ["${workspaceFolder}/vox/src"],
+	"python.analysis.typeCheckingMode": "basic",
+	"[python]": {
+		"editor.defaultFormatter": "charliermarsh.ruff",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "explicit"
+		}
+	}
+}

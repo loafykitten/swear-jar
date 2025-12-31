@@ -6,7 +6,7 @@ A Bun-based monorepo for stream swear detection tools. The service provides a ba
 
 - **shared/** (@swear-jar/shared) - Shared TypeScript types between projects
 - **service/** (@swear-jar/service) - Bun backend with API, WebSockets, and React widget
-- **vox/** (@swear-jar/vox) - Ink TUI for speech recognition and swear detection
+- **vox/** - Python/Textual TUI for speech recognition and swear detection
 
 ## Bun-First Development
 
@@ -32,19 +32,20 @@ bun run dev:service    # Development with hot reload
 bun run start:service  # Production mode
 bun run test:service   # Run service tests
 
-# Vox commands
-bun run dev:vox        # Development with hot reload
-bun run start:vox      # Production mode
-bun run test:vox       # Run vox tests
+# Vox commands (Python/uv)
+cd vox && uv run python src/main.py  # Run vox TUI
 ```
 
 ### Directly in workspaces:
 
 ```sh
-# In service/ or vox/
+# In service/
 bun dev    # Development
 bun start  # Production
 bun test   # Tests
+
+# In vox/
+uv run python src/main.py  # Run the TUI
 ```
 
 ## Workspace Dependencies
@@ -93,4 +94,4 @@ Service runs on port 3000. SQLite data persists in `swear-data` volume.
 For detailed conventions specific to each project:
 
 - **service/CLAUDE.md** - Bun.serve(), SQLite, WebSockets, HTML imports, React frontend
-- **vox/CLAUDE.md** - Ink TUI components, terminal rendering patterns
+- **vox/CLAUDE.md** - Python/Textual TUI architecture, uv dependency management, Textual patterns

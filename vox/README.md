@@ -1,15 +1,20 @@
-# swear-jar-vox
+# Vox
 
-To install dependencies:
+Python/Textual TUI for speech recognition and swear detection.
 
-```bash
-bun install
-```
-
-To run:
+## Development
 
 ```bash
-bun run index.ts
+# Create virtual environment and install dependencies
+uv venv
+uv pip install -e .
+
+# Run the app
+uv run python src/main.py
 ```
 
-This project was created using `bun init` in bun v1.3.4. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+## Requirements
+
+- Python 3.10+
+- uv (for dependency management)
+- Textual (TUI framework)
