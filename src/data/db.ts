@@ -2,7 +2,7 @@ import { logger } from '@/utils/logger'
 import { Database } from 'bun:sqlite'
 
 const isTest = process.env.NODE_ENV === 'test'
-const dbPath = isTest ? ':memory:' : 'swears-db.sqlite'
+const dbPath = isTest ? ':memory:' : (process.env.DB_PATH || 'swears-db.sqlite')
 
 export const db = new Database(dbPath)
 
