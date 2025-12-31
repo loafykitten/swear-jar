@@ -9,7 +9,6 @@
 		"start": "NODE_ENV=production bun --bun src/index.ts"
 	},
 	"dependencies": {
-		"@swear-jar/shared": "workspace:*",
 		"react": "^19",
 		"react-dom": "^19"
 	},

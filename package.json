@@ -1,17 +1,10 @@
 {
 	"name": "swear-jar",
 	"private": true,
-	"workspaces": [
-		"shared",
-		"service",
-		"vox"
-	],
 	"scripts": {
 		"start:service": "cd service && bun start",
 		"dev:service": "cd service && bun dev",
 		"test:service": "cd service && bun test",
-		"start:vox": "cd vox && bun start",
-		"dev:vox": "cd vox && bun dev",
-		"test:vox": "cd vox && bun test"
+		"start:vox": "cd vox && uv run python src/main.py"
 	}
 }

@@ -4,7 +4,6 @@ A Bun-based monorepo for stream swear detection tools. The service provides a ba
 
 ## Workspaces
 
-- **shared/** (@swear-jar/shared) - Shared TypeScript types between projects
 - **service/** (@swear-jar/service) - Bun backend with API, WebSockets, and React widget
 - **vox/** - Python/Textual TUI for speech recognition and swear detection
 
@@ -46,24 +45,6 @@ bun test   # Tests
 
 # In vox/
 uv run python src/main.py  # Run the TUI
-```
-
-## Workspace Dependencies
-
-To use shared types in `service` or `vox`, add to `package.json`:
-
-```json
-{
-  "dependencies": {
-    "@swear-jar/shared": "workspace:*"
-  }
-}
-```
-
-Then import:
-
-```ts
-import { SomeType } from '@swear-jar/shared'
 ```
 
 ## Code Style
