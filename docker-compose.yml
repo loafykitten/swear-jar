@@ -1,10 +1,12 @@
 services:
   swear-jar:
-    build: .
+    build:
+      context: .
+      dockerfile: service/Dockerfile
     ports:
       - "3000:3000"
     env_file:
-      - .env
+      - service/.env
     volumes:
       - swear-data:/data
 
