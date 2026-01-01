@@ -1,0 +1,163 @@
+2026-01-01 04:13:20,632 [DEBUG] connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+2026-01-01 04:13:20,752 [DEBUG] connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x115c73fb0>
+2026-01-01 04:13:20,752 [DEBUG] start_tls.started ssl_context=<ssl.SSLContext object at 0x116cf3cd0> server_hostname='huggingface.co' timeout=None
+2026-01-01 04:13:20,779 [DEBUG] start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x106064b60>
+2026-01-01 04:13:20,779 [DEBUG] send_request_headers.started request=<Request [b'GET']>
+2026-01-01 04:13:20,779 [DEBUG] send_request_headers.complete
+2026-01-01 04:13:20,779 [DEBUG] send_request_body.started request=<Request [b'GET']>
+2026-01-01 04:13:20,779 [DEBUG] send_request_body.complete
+2026-01-01 04:13:20,779 [DEBUG] receive_response_headers.started request=<Request [b'GET']>
+2026-01-01 04:13:20,851 [DEBUG] receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Content-Length', b'1946'), (b'Connection', b'keep-alive'), (b'Date', b'Thu, 01 Jan 2026 10:13:20 GMT'), (b'ETag', b'W/"79a-pzkRQ0P87BPbrRfpT8NoKD+kGA8"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-695648c0-18dc186f6c259626069e160a;391fce52-58ad-454a-8c45-d19dce3481e2'), (b'RateLimit', b'"api";r=492;t=202'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 95844f5a2811a9be1c2373c74401a4bc.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'IAH50-P3'), (b'X-Amz-Cf-Id', b'hSlnE1ikC_rngIzb_MtMcmT7VUF6XQKmou2_rXc_ahaX0nwiFNRSrg==')])
+2026-01-01 04:13:20,852 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-base/revision/main "HTTP/1.1 200 OK"
+2026-01-01 04:13:20,852 [DEBUG] receive_response_body.started request=<Request [b'GET']>
+2026-01-01 04:13:20,853 [DEBUG] receive_response_body.complete
+2026-01-01 04:13:20,853 [DEBUG] response_closed.started
+2026-01-01 04:13:20,853 [DEBUG] response_closed.complete
+2026-01-01 04:13:21,043 [DEBUG] Using selector: KqueueSelector
+2026-01-01 04:13:22,866 [INFO] Transcription worker started
+2026-01-01 04:13:25,903 [INFO] Audio buffer: 48128 samples, min=-0.1356, max=0.1732, rms=0.0244
+2026-01-01 04:13:25,903 [INFO] Normalized audio: peak 0.1732 -> 0.9
+2026-01-01 04:13:25,903 [INFO] Calling transcription engine...
+2026-01-01 04:13:25,903 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:25,903 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:25,903 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:25,905 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:25,905 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:26,335 [DEBUG] Segment 1: " This is a mic test for the" (start=0.00, end=3.00)
+2026-01-01 04:13:26,335 [INFO] Total segments: 1, result: "This is a mic test for the"
+2026-01-01 04:13:26,335 [INFO] Transcription result: "This is a mic test for the" (len=26)
+2026-01-01 04:13:28,932 [INFO] Audio buffer: 48128 samples, min=-0.1396, max=0.1306, rms=0.0191
+2026-01-01 04:13:28,932 [INFO] Normalized audio: peak 0.1396 -> 0.9
+2026-01-01 04:13:28,932 [INFO] Calling transcription engine...
+2026-01-01 04:13:28,932 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:28,932 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:28,932 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:28,934 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:28,934 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:29,356 [DEBUG] Segment 1: " transcription service of swearing" (start=0.00, end=3.00)
+2026-01-01 04:13:29,357 [INFO] Total segments: 1, result: "transcription service of swearing"
+2026-01-01 04:13:29,357 [INFO] Transcription result: "transcription service of swearing" (len=33)
+2026-01-01 04:13:31,919 [INFO] Audio buffer: 48128 samples, min=-0.1776, max=0.1739, rms=0.0213
+2026-01-01 04:13:31,919 [INFO] Normalized audio: peak 0.1776 -> 0.9
+2026-01-01 04:13:31,920 [INFO] Calling transcription engine...
+2026-01-01 04:13:31,920 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:31,920 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:31,920 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:31,921 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:31,921 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:32,376 [DEBUG] Segment 1: " Vox Analysis and I can" (start=0.00, end=3.00)
+2026-01-01 04:13:32,377 [INFO] Total segments: 1, result: "Vox Analysis and I can"
+2026-01-01 04:13:32,377 [INFO] Transcription result: "Vox Analysis and I can" (len=22)
+2026-01-01 04:13:34,948 [INFO] Audio buffer: 48128 samples, min=-0.1396, max=0.1723, rms=0.0204
+2026-01-01 04:13:34,949 [INFO] Normalized audio: peak 0.1723 -> 0.9
+2026-01-01 04:13:34,949 [INFO] Calling transcription engine...
+2026-01-01 04:13:34,949 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:34,949 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:34,949 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:34,950 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:34,951 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:35,373 [DEBUG] Segment 1: " and actually see that the" (start=0.00, end=3.00)
+2026-01-01 04:13:35,374 [INFO] Total segments: 1, result: "and actually see that the"
+2026-01-01 04:13:35,374 [INFO] Transcription result: "and actually see that the" (len=25)
+2026-01-01 04:13:37,935 [INFO] Audio buffer: 48128 samples, min=-0.1425, max=0.1898, rms=0.0183
+2026-01-01 04:13:37,935 [INFO] Normalized audio: peak 0.1898 -> 0.9
+2026-01-01 04:13:37,935 [INFO] Calling transcription engine...
+2026-01-01 04:13:37,935 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:37,935 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:37,935 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:37,937 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:37,937 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:38,401 [DEBUG] Segment 1: " text is coming through just fine, which" (start=0.00, end=3.00)
+2026-01-01 04:13:38,402 [INFO] Total segments: 1, result: "text is coming through just fine, which"
+2026-01-01 04:13:38,402 [INFO] Transcription result: "text is coming through just fine, which" (len=39)
+2026-01-01 04:13:40,965 [INFO] Audio buffer: 48128 samples, min=-0.1268, max=0.1283, rms=0.0164
+2026-01-01 04:13:40,965 [INFO] Normalized audio: peak 0.1283 -> 0.9
+2026-01-01 04:13:40,965 [INFO] Calling transcription engine...
+2026-01-01 04:13:40,965 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:40,965 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:40,965 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:40,967 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:40,967 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:41,407 [DEBUG] Segment 1: " is great because that means that everything" (start=0.00, end=3.00)
+2026-01-01 04:13:41,408 [INFO] Total segments: 1, result: "is great because that means that everything"
+2026-01-01 04:13:41,408 [INFO] Transcription result: "is great because that means that everything" (len=43)
+2026-01-01 04:13:43,951 [INFO] Audio buffer: 48128 samples, min=-0.1527, max=0.1647, rms=0.0196
+2026-01-01 04:13:43,951 [INFO] Normalized audio: peak 0.1647 -> 0.9
+2026-01-01 04:13:43,952 [INFO] Calling transcription engine...
+2026-01-01 04:13:43,952 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:43,952 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:43,952 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:43,953 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:43,953 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:44,415 [DEBUG] Segment 1: " is working. So very, very cool." (start=0.00, end=2.96)
+2026-01-01 04:13:44,415 [INFO] Total segments: 1, result: "is working. So very, very cool."
+2026-01-01 04:13:44,415 [INFO] Transcription result: "is working. So very, very cool." (len=31)
+2026-01-01 04:13:46,980 [INFO] Audio buffer: 48128 samples, min=-0.1613, max=0.2388, rms=0.0231
+2026-01-01 04:13:46,981 [INFO] Normalized audio: peak 0.2388 -> 0.9
+2026-01-01 04:13:46,981 [INFO] Calling transcription engine...
+2026-01-01 04:13:46,981 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:46,981 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:46,981 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:46,983 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:46,983 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:47,435 [DEBUG] Segment 1: " Indeed, I wonder how fast I can actually" (start=0.00, end=3.00)
+2026-01-01 04:13:47,435 [INFO] Total segments: 1, result: "Indeed, I wonder how fast I can actually"
+2026-01-01 04:13:47,435 [INFO] Transcription result: "Indeed, I wonder how fast I can actually" (len=40)
+2026-01-01 04:13:49,967 [INFO] Audio buffer: 48128 samples, min=-0.1455, max=0.1480, rms=0.0223
+2026-01-01 04:13:49,967 [INFO] Normalized audio: peak 0.1480 -> 0.9
+2026-01-01 04:13:49,968 [INFO] Calling transcription engine...
+2026-01-01 04:13:49,968 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:49,968 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:49,968 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:49,969 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:49,969 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:50,507 [DEBUG] Segment 1: " speak if I'm just kind of speaking in normal time and then I'm" (start=0.00, end=4.00)
+2026-01-01 04:13:50,507 [INFO] Total segments: 1, result: "speak if I'm just kind of speaking in normal time and then I'm"
+2026-01-01 04:13:50,507 [INFO] Transcription result: "speak if I'm just kind of speaking in normal time and then I'm" (len=62)
+2026-01-01 04:13:52,996 [INFO] Audio buffer: 48128 samples, min=-0.1632, max=0.1394, rms=0.0301
+2026-01-01 04:13:52,996 [INFO] Normalized audio: peak 0.1632 -> 0.9
+2026-01-01 04:13:52,996 [INFO] Calling transcription engine...
+2026-01-01 04:13:52,996 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:52,996 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:52,996 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:52,998 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:52,998 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:53,567 [DEBUG] Segment 1: " I wonder if it can kind of keep up with everything that I'm doing and all my monologue." (start=0.00, end=3.00)
+2026-01-01 04:13:53,567 [INFO] Total segments: 1, result: "I wonder if it can kind of keep up with everything that I'm doing and all my monologue."
+2026-01-01 04:13:53,567 [INFO] Transcription result: "I wonder if it can kind of keep up with everything that I'm doing and all my monologue." (len=87)
+2026-01-01 04:13:55,983 [INFO] Audio buffer: 48128 samples, min=-0.1418, max=0.1753, rms=0.0228
+2026-01-01 04:13:55,983 [INFO] Normalized audio: peak 0.1753 -> 0.9
+2026-01-01 04:13:55,983 [INFO] Calling transcription engine...
+2026-01-01 04:13:55,983 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:55,983 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:55,983 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:55,984 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:55,985 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:56,533 [DEBUG] Segment 1: " and yada yada, I definitely do wonder if that's something that this thing..." (start=0.00, end=3.04)
+2026-01-01 04:13:56,534 [INFO] Total segments: 1, result: "and yada yada, I definitely do wonder if that's something that this thing..."
+2026-01-01 04:13:56,534 [INFO] Transcription result: "and yada yada, I definitely do wonder if that's something that this thing..." (len=76)
+2026-01-01 04:13:59,013 [INFO] Audio buffer: 48128 samples, min=-0.1490, max=0.1454, rms=0.0160
+2026-01-01 04:13:59,013 [INFO] Normalized audio: peak 0.1490 -> 0.9
+2026-01-01 04:13:59,013 [INFO] Calling transcription engine...
+2026-01-01 04:13:59,013 [DEBUG] Input audio: shape=(48128,), dtype=float32, peak=0.9000
+2026-01-01 04:13:59,013 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:13:59,013 [INFO] Processing audio with duration 00:03.008
+2026-01-01 04:13:59,015 [INFO] Transcribe returned: duration=3.01s, language=en, prob=1.00
+2026-01-01 04:13:59,015 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:13:59,508 [DEBUG] Segment 1: " can do because I think that would be really really cool." (start=0.00, end=2.40)
+2026-01-01 04:13:59,509 [INFO] Total segments: 1, result: "can do because I think that would be really really cool."
+2026-01-01 04:13:59,509 [INFO] Transcription result: "can do because I think that would be really really cool." (len=56)
+2026-01-01 04:14:00,258 [INFO] Transcription worker ending. Chunks received: 582
+2026-01-01 04:14:00,259 [INFO] Final flush: 18432 samples
+2026-01-01 04:14:00,259 [INFO] Normalized final audio: peak 0.0028 -> 0.9
+2026-01-01 04:14:00,259 [DEBUG] Input audio: shape=(18432,), dtype=float32, peak=0.9000
+2026-01-01 04:14:00,259 [DEBUG] Calling model.transcribe(vad_filter=False, language=en)
+2026-01-01 04:14:00,259 [INFO] Processing audio with duration 00:01.152
+2026-01-01 04:14:00,262 [INFO] Transcribe returned: duration=1.15s, language=en, prob=1.00
+2026-01-01 04:14:00,262 [DEBUG] Processing segment at 00:00.000
+2026-01-01 04:14:00,732 [DEBUG] Segment 1: " ." (start=0.00, end=7.00)
+2026-01-01 04:14:00,733 [DEBUG] Segment 2: " ." (start=7.00, end=14.00)
+2026-01-01 04:14:00,733 [DEBUG] Segment 3: " ." (start=14.00, end=21.00)
+2026-01-01 04:14:00,733 [DEBUG] Segment 4: " ." (start=21.00, end=28.00)
+2026-01-01 04:14:00,733 [INFO] Total segments: 4, result: ". . . ."
+2026-01-01 04:14:00,733 [INFO] Final transcription result: ". . . ."

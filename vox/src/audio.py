@@ -43,7 +43,7 @@ class AudioCapture:
 
 		# Extract selected channel if capturing multi-channel audio
 		if self._num_channels > 1:
-			audio_data = indata[:, self._channel : self._channel + 1].copy()
+			audio_data = indata[:, self._channel].copy()
 		else:
 			audio_data = indata.copy()
 
@@ -78,6 +78,14 @@ class AudioCapture:
 		else:
 			self._num_channels = CHANNELS
 
+		# Debug: print device info
+		if device_id is not None:
+			device_info = sd.query_devices(device_id)
+			print(f'[AUDIO] Device: {device_info["name"]}')
+			print(f'[AUDIO] Native sample rate: {device_info["default_samplerate"]}Hz')
+			print(f'[AUDIO] Max input channels: {device_info["max_input_channels"]}')
+			print(f'[AUDIO] Requesting: {SAMPLE_RATE}Hz, {self._num_channels} ch, channel {channel}')
+
 		self.stream = sd.InputStream(
 			samplerate=SAMPLE_RATE,
 			channels=self._num_channels,
@@ -88,6 +96,7 @@ class AudioCapture:
 		)
 		self.stream.start()
 		self._running = True
+		print(f'[AUDIO] Stream started: actual sample rate = {self.stream.samplerate}Hz')
 
 	def stop(self) -> None:
 		"""Stop capturing audio."""

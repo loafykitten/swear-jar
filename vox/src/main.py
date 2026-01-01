@@ -2,8 +2,20 @@
 Captures user microphone audio in realtime and uses speech-to-text to detect user-defined swear words and interact with the swear-jar service upon detection.
 """
 
+import logging
 import os
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+# Set up file logging
+logging.basicConfig(
+	level=logging.DEBUG,
+	format='%(asctime)s [%(levelname)s] %(message)s',
+	handlers=[
+		logging.FileHandler('vox_debug.log', mode='w'),
+	],
+)
+log = logging.getLogger(__name__)
 
 from queue import Empty, Queue
 
@@ -184,6 +196,10 @@ class VoxAnalysis(App):
 		"""Update audio level (called from audio thread)."""
 		self.audio_level = level
 
+	def _append_transcript(self, text: str) -> None:
+		"""Append text to transcript (called from main thread via call_from_thread)."""
+		self.query_one('#transcript', TranscriptView).append_text(text)
+
 	def watch_is_recording(self, recording: bool) -> None:
 		"""Update UI when recording state changes."""
 		self.query_one('#status', StatusPanel).recording = recording
@@ -317,22 +333,41 @@ class VoxAnalysis(App):
 		worker = get_current_worker()
 		audio_buffer: list[np.ndarray] = []
 		total_samples = 0
+		chunks_received = 0
+
+		log.info('Transcription worker started')
 
 		while not worker.is_cancelled and self.is_recording:
 			try:
 				chunk = self.audio_queue.get(timeout=0.1)
 				audio_buffer.append(chunk)
 				total_samples += len(chunk)
+				chunks_received += 1
 
 				if total_samples >= SAMPLES_PER_BUFFER:
 					audio_data = np.concatenate(audio_buffer)
-					text = self.transcription_engine.transcribe(audio_data)
+					# Audio diagnostics
+					audio_min = float(np.min(audio_data))
+					audio_max = float(np.max(audio_data))
+					audio_rms = float(np.sqrt(np.mean(audio_data**2)))
+					log.info(f'Audio buffer: {len(audio_data)} samples, min={audio_min:.4f}, max={audio_max:.4f}, rms={audio_rms:.4f}')
+
+					# Normalize audio before transcription
+					peak = float(np.max(np.abs(audio_data)))
+					if peak > 0.001:
+						audio_data = audio_data * (0.9 / peak)
+						log.info(f'Normalized audio: peak {peak:.4f} -> 0.9')
+
+					try:
+						log.info('Calling transcription engine...')
+						text = self.transcription_engine.transcribe(audio_data)
+						log.info(f'Transcription result: "{text}" (len={len(text)})')
+					except Exception as e:
+						log.exception(f'Transcription error: {e}')
+						text = ''
 
 					if text.strip():
-						self.call_from_thread(
-							self.query_one('#transcript', TranscriptView).append_text,
-							text,
-						)
+						self.call_from_thread(self._append_transcript, text)
 
 					audio_buffer = []
 					total_samples = 0
@@ -340,14 +375,27 @@ class VoxAnalysis(App):
 			except Empty:
 				continue
 
+		log.info(f'Transcription worker ending. Chunks received: {chunks_received}')
+
 		if audio_buffer and total_samples > SAMPLE_RATE * 0.5:
 			audio_data = np.concatenate(audio_buffer)
-			text = self.transcription_engine.transcribe(audio_data)
+			log.info(f'Final flush: {len(audio_data)} samples')
+
+			# Normalize final buffer too
+			peak = float(np.max(np.abs(audio_data)))
+			if peak > 0.001:
+				audio_data = audio_data * (0.9 / peak)
+				log.info(f'Normalized final audio: peak {peak:.4f} -> 0.9')
+
+			try:
+				text = self.transcription_engine.transcribe(audio_data)
+				log.info(f'Final transcription result: "{text}"')
+			except Exception as e:
+				log.exception(f'Final transcription error: {e}')
+				text = ''
+
 			if text.strip():
-				self.call_from_thread(
-					self.query_one('#transcript', TranscriptView).append_text,
-					text,
-				)
+				self.call_from_thread(self._append_transcript, text)
 
 
 if __name__ == '__main__':
