@@ -1,7 +1,12 @@
 {
 	"python.defaultInterpreterPath": "${workspaceFolder}/vox/.venv/bin/python",
+	"python.analysis.indexing": true,
 	"python.analysis.extraPaths": ["${workspaceFolder}/vox/src"],
 	"python.analysis.typeCheckingMode": "basic",
+	"python.analysis.autoImportCompletions": true,
+	"python.analysis.packageIndexDepths": [
+		{ "name": "textual", "depth": 2, "includeAllSymbols": true }
+	],
 	"[python]": {
 		"editor.defaultFormatter": "charliermarsh.ruff",
 		"editor.formatOnSave": true,
