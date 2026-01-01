@@ -1,3 +1,47 @@
 Screen {
-    align: center middle;
+	align: center top;
+}
+
+#main-content {
+	width: 100%;
+	height: 100%;
+	padding: 1 2;
+}
+
+#status {
+	width: 100%;
+	height: auto;
+	border: solid $primary;
+	margin-bottom: 1;
+	padding: 1;
+}
+
+#status-text {
+	width: 100%;
+	height: 1;
+	content-align: center middle;
+	text-align: center;
+}
+
+#device-display {
+	width: 100%;
+	height: 1;
+	text-align: center;
+	color: $text-muted;
+	margin-top: 1;
+}
+
+#level-bar {
+	width: 100%;
+	height: 1;
+	text-align: center;
+	margin-top: 1;
+}
+
+#transcript {
+	width: 100%;
+	height: 1fr;
+	padding: 1 2;
+	border: solid $surface-lighten-2;
+	overflow-y: auto;
 }
