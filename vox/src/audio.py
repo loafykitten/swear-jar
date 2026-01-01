@@ -1,7 +1,7 @@
 """Audio capture module using sounddevice for microphone input."""
 
 from queue import Queue
-from typing import Callable
+from typing import Any, Callable, cast
 
 import numpy as np
 import sounddevice as sd
@@ -110,7 +110,8 @@ class AudioCapture:
 		"""List available audio input devices."""
 		devices = sd.query_devices()
 		input_devices = []
-		for i, device in enumerate(devices):
+		for i, dev in enumerate(devices):
+			device = cast(dict[str, Any], dev)
 			if device['max_input_channels'] > 0:
 				input_devices.append({
 					'id': i,
@@ -124,7 +125,7 @@ class AudioCapture:
 	def validate_device(device_id: int) -> bool:
 		"""Check if a device ID is valid and has input channels."""
 		try:
-			device = sd.query_devices(device_id)
+			device = cast(dict[str, Any], sd.query_devices(device_id))
 			return device['max_input_channels'] > 0
 		except (sd.PortAudioError, IndexError):
 			return False
@@ -133,7 +134,7 @@ class AudioCapture:
 	def get_device_channels(device_id: int) -> int:
 		"""Get the number of input channels for a device."""
 		try:
-			device = sd.query_devices(device_id)
+			device = cast(dict[str, Any], sd.query_devices(device_id))
 			return device['max_input_channels']
 		except (sd.PortAudioError, IndexError):
 			return 1
