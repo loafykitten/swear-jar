@@ -13,7 +13,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Vertical
 from textual.reactive import reactive
-from textual.widgets import Footer, Header, Label, Static
+from textual.widgets import Footer, Header, Static
 from textual.worker import get_current_worker
 
 from audio import AudioCapture, SAMPLE_RATE
@@ -232,7 +232,7 @@ class VoxAnalysis(App):
 
 		def on_channel_selected(
 			channel: int | None,
-			device_id: int,
+			device_id: int | None,
 			device_name: str,
 			channel_count: int,
 		) -> None:
