@@ -1,10 +1,11 @@
-import { useURLParams } from '@/hooks/useURLParams'
+import type { ConfigParams } from '@/types/Params'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Props = {
 	swears: number
 	cost: number
 	maxCost: number
+	configParams: ConfigParams
 }
 
 const costFormat = Intl.NumberFormat('en-US', {
@@ -12,9 +13,12 @@ const costFormat = Intl.NumberFormat('en-US', {
 	currency: 'USD',
 })
 
-export default function ProgressBar({ swears, cost, maxCost }: Props) {
-	const { configParams } = useURLParams()
-
+export default function ProgressBar({
+	swears,
+	cost,
+	maxCost,
+	configParams,
+}: Props) {
 	const [isVisible, setIsVisible] = useState(true)
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 

@@ -1,14 +1,5 @@
+import type { ConfigParams, SwearsParams } from '@/types/Params'
 import { useState } from 'react'
-
-type ConfigParams = {
-	apiKey: string
-	isAnimated: boolean
-}
-
-type SwearsParams = {
-	pricePerSwear: number
-	maxCost: number
-}
 
 export const useURLParams = () => {
 	const params = new URLSearchParams(window.location.search)
