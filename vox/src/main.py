@@ -46,7 +46,7 @@ log = get_logger(__name__)
 
 
 class VoxAnalysis(App):
-	CSS_PATH = ['vox.tcss']
+	CSS_PATH = ['styles/vox.tcss', 'styles/config.tcss']
 	SCREENS = {'halp': Halp}
 	BINDINGS = [
 		Binding(key='q', action='quit', description='Quit'),

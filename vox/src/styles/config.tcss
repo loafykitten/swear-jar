@@ -1,0 +1,41 @@
+ConfigScreen {
+	align: center top;
+}
+
+#config-container {
+	width: 100%;
+	max-width: 80;
+	height: 100%;
+	padding: 1 2;
+}
+
+.section-title {
+	text-style: bold;
+	color: $accent;
+	margin-top: 1;
+	margin-bottom: 1;
+}
+
+.field-label {
+	margin-top: 1;
+	margin-bottom: 0;
+	color: $text-muted;
+}
+
+.config-select, .config-input {
+	width: 100%;
+	margin-bottom: 1;
+}
+
+#button-row {
+	align: center middle;
+	margin-top: 2;
+}
+
+#button-row Button {
+	margin: 0 1;
+}
+
+Rule {
+	margin: 1 0;
+}
