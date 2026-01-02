@@ -1,6 +1,7 @@
 export const getPricePerSwear = (param: string) => {
 	const value = parseFloat(param)
-	if (Number.isNaN(value) || !Number.isFinite(value) || value <= 0) {
+	console.log(value)
+	if (Number.isNaN(value) || !Number.isFinite(value) || value < 0) {
 		return undefined
 	}
 	return value

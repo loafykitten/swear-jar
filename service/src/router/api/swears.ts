@@ -71,7 +71,7 @@ const POST = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 	const pricePerSwear = getPricePerSwear(
 		url.searchParams.get('pricePerSwear') ?? '',
 	)
-	if (!pricePerSwear) {
+	if (pricePerSwear === undefined) {
 		const response = 'pricePerSwear is malformed in API request'
 
 		logger.error(response)

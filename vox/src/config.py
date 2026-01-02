@@ -14,6 +14,8 @@ class VoxConfig(TypedDict, total=False):
 	device_id: int | None
 	device_name: str | None
 	device_channels: dict[str, int]  # Key: str(device_id), Value: channel index
+	base_url: str | None
+	api_key: str | None
 
 
 def load_config() -> VoxConfig:
@@ -61,4 +63,27 @@ def save_device_channel(device_id: int, channel: int) -> None:
 	if 'device_channels' not in config:
 		config['device_channels'] = {}
 	config['device_channels'][str(device_id)] = channel
+	save_config(config)
+
+
+def get_api_config() -> tuple[str | None, str | None]:
+	"""Get saved API configuration.
+
+	Returns:
+		Tuple of (base_url, api_key). Either may be None if not set.
+	"""
+	config = load_config()
+	return config.get('base_url'), config.get('api_key')
+
+
+def save_api_config(base_url: str, api_key: str) -> None:
+	"""Save API configuration.
+
+	Args:
+		base_url: Base URL for the swear-jar service
+		api_key: API key for authentication
+	"""
+	config = load_config()
+	config['base_url'] = base_url
+	config['api_key'] = api_key
 	save_config(config)

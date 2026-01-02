@@ -1,0 +1,18 @@
+# Default swear word list for Vox
+# One word per line, case-insensitive
+# Lines starting with # are comments
+
+damn
+crap
+shit
+fuck
+fucker
+ass
+bitch
+bastard
+motherfucker
+cocksucker
+dick
+cock
+fucking
+shitting

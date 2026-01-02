@@ -18,15 +18,21 @@ from textual.worker import get_current_worker
 
 from audio import SAMPLE_RATE, AudioCapture
 from config import (
+	get_api_config,
 	get_device_channel,
 	get_saved_device,
+	save_api_config,
 	save_device,
 	save_device_channel,
 )
 from halp import Halp
 from processing import SAMPLES_PER_BUFFER, process_audio_buffer
+from api_client import SwearAPIClient
+from cli import parse_args
+from swear_detection import SwearDetector
 from transcription import TranscriptionEngine
 from widgets import (
+	ApiConfigScreen,
 	ChannelSelectScreen,
 	DeviceSelectScreen,
 	StatusPanel,
@@ -50,20 +56,34 @@ class VoxAnalysis(App):
 		Binding(key='space', action='toggle_recording', description='Record'),
 		Binding(key='r', action='clear_transcript', description='Clear'),
 		Binding(key='m', action='select_microphone', description='Mic'),
+		Binding(key='c', action='configure_api', description='Config'),
 	]
 
 	is_recording = reactive(False)
 	is_loading = reactive(False)
 	model_ready = reactive(True)
+	api_configured = reactive(False)
 	selected_device_id: reactive[int | None] = reactive(None)
 	selected_device_name: reactive[str] = reactive('System Default')
 	audio_level: reactive[float] = reactive(0.0)
 	selected_channel: reactive[int] = reactive(0)
 	selected_channel_count: reactive[int] = reactive(1)
 
-	def __init__(self, transcription_engine: TranscriptionEngine):
+	def __init__(
+		self,
+		transcription_engine: TranscriptionEngine,
+		swear_detector: SwearDetector,
+		api_client: SwearAPIClient | None,
+		initial_base_url: str | None = None,
+		initial_api_key: str | None = None,
+	):
 		super().__init__()
 		self.audio_queue: Queue = Queue()
+		self.swear_detector = swear_detector
+		self.api_client = api_client
+		self._base_url = initial_base_url
+		self._api_key = initial_api_key
+		self._api_configured = api_client is not None
 
 		# Load saved device preference
 		saved_id, saved_name = get_saved_device()
@@ -118,6 +138,9 @@ class VoxAnalysis(App):
 		self.selected_channel = self._initial_channel
 		self.selected_channel_count = self._initial_channel_count
 
+		# Set API configured state
+		self.api_configured = self._api_configured
+
 	def _update_level(self, level: float) -> None:
 		"""Update audio level (called from audio thread)."""
 		self.audio_level = level
@@ -125,6 +148,13 @@ class VoxAnalysis(App):
 	def _append_transcript(self, text: str) -> None:
 		"""Append text to transcript (called from main thread via call_from_thread)."""
 		self.query_one('#transcript', TranscriptView).append_text(text)
+
+	def _process_swears(self, text: str) -> None:
+		"""Detect and report swears in transcribed text."""
+		count, detected = self.swear_detector.detect(text)
+		if count > 0:
+			self.api_client.report_swears(count)
+			log.info(f'Reported {count} swear(s): {detected}')
 
 	def watch_is_recording(self, recording: bool) -> None:
 		"""Update UI when recording state changes."""
@@ -158,6 +188,10 @@ class VoxAnalysis(App):
 		"""Toggle audio recording on/off."""
 		if not self.model_ready:
 			self.notify('Model is still loading...', severity='warning')
+			return
+		if not self.api_configured:
+			self.notify('API not configured. Set base URL and API key.', severity='warning')
+			self.action_configure_api()
 			return
 		if self.is_recording:
 			self.stop_recording()
@@ -241,6 +275,24 @@ class VoxAnalysis(App):
 			on_device_selected,
 		)
 
+	def action_configure_api(self) -> None:
+		"""Open API configuration modal."""
+
+		def on_config_saved(result: tuple[str, str] | None) -> None:
+			if result:
+				base_url, api_key = result
+				save_api_config(base_url, api_key)
+				self._base_url = base_url
+				self._api_key = api_key
+				self.api_client = SwearAPIClient(base_url, api_key)
+				self.api_configured = True
+				self.notify('API configuration saved')
+
+		self.push_screen(
+			ApiConfigScreen(self._base_url, self._api_key),
+			on_config_saved,
+		)
+
 	def start_recording(self) -> None:
 		"""Start audio capture and transcription."""
 		self.is_recording = True
@@ -276,6 +328,7 @@ class VoxAnalysis(App):
 					text = process_audio_buffer(audio_buffer, self.transcription_engine)
 					if text.strip():
 						self.call_from_thread(self._append_transcript, text)
+						self.call_from_thread(self._process_swears, text)
 					audio_buffer = []
 					total_samples = 0
 
@@ -290,11 +343,38 @@ class VoxAnalysis(App):
 			text = process_audio_buffer(audio_buffer, self.transcription_engine)
 			if text.strip():
 				self.call_from_thread(self._append_transcript, text)
+				self.call_from_thread(self._process_swears, text)
 
 
 if __name__ == '__main__':
+	args = parse_args()
+
+	print(f'Loading word list from {args.word_list}...')
+	swear_detector = SwearDetector(args.word_list)
+	print(f'Loaded {swear_detector.word_count} swear words.')
+
+	# Load from config, CLI overrides
+	saved_base_url, saved_api_key = get_api_config()
+	base_url = args.base_url or saved_base_url
+	api_key = args.api_key or saved_api_key
+
+	# Create api_client only if both are set
+	api_client = None
+	if base_url and api_key:
+		api_client = SwearAPIClient(base_url, api_key)
+		print('API client configured.')
+	else:
+		print('API not configured. Press [c] to configure.')
+
 	print('Loading Whisper model...')
 	engine = TranscriptionEngine()
 	engine._ensure_model_loaded()
 	print('Model loaded. Starting app...')
-	VoxAnalysis(engine).run()
+
+	VoxAnalysis(
+		engine,
+		swear_detector,
+		api_client,
+		initial_base_url=base_url,
+		initial_api_key=api_key,
+	).run()
