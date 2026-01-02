@@ -1,5 +1,7 @@
 """Unified configuration screen for Vox settings."""
 
+from typing import cast
+
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, VerticalScroll
@@ -249,7 +251,9 @@ class ConfigScreen(Screen):
 		if self._hydrating:
 			return  # Skip during initial hydration
 		if event.select.id == 'device-select':
-			self._on_device_changed(event.value)
+			device_value = event.value
+			device_id = None if device_value is Select.BLANK else cast(int | None, device_value)
+			self._on_device_changed(device_id)
 
 	def _on_device_changed(self, device_id: int | None) -> None:
 		"""Update channel options when device changes."""
@@ -283,9 +287,11 @@ class ConfigScreen(Screen):
 		base_url_input = self.query_one('#base-url-input', Input)
 		api_key_input = self.query_one('#api-key-input', Input)
 
-		# Extract values
-		device_id = device_select.value if device_select.value != Select.BLANK else None
-		channel = channel_select.value if channel_select.value != Select.BLANK else 0
+		# Extract values with proper type narrowing for Pylance
+		device_id_raw = device_select.value
+		device_id: int | None = None if device_id_raw is Select.BLANK else cast(int | None, device_id_raw)
+		channel_raw = channel_select.value
+		channel: int = 0 if channel_raw is Select.BLANK else cast(int, channel_raw)
 		model = str(model_select.value) if model_select.value != Select.BLANK else 'base'
 		base_url = base_url_input.value.strip()
 		api_key = api_key_input.value.strip()

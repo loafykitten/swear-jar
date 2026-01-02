@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import TypedDict
+from typing import TypedDict, cast
 
 CONFIG_DIR = Path.home() / '.config' / 'vox'
 CONFIG_FILE = CONFIG_DIR / 'settings.json'
@@ -34,11 +34,14 @@ def load_config() -> VoxConfig:
 		return _config_cache
 	try:
 		with open(CONFIG_FILE, 'r') as f:
-			_config_cache = json.load(f)
-			return _config_cache
+			loaded = json.load(f)
+			config: VoxConfig = cast(VoxConfig, loaded) if isinstance(loaded, dict) else {}
+			_config_cache = config
+			return config
 	except (json.JSONDecodeError, IOError):
-		_config_cache = {}
-		return _config_cache
+		config: VoxConfig = {}
+		_config_cache = config
+		return config
 
 
 def save_config(config: VoxConfig) -> None:
