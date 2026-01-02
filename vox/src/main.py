@@ -3,8 +3,6 @@ Captures user microphone audio in realtime and uses speech-to-text to detect use
 """
 
 # Import logging_setup first to configure logging before other modules
-from logging_setup import get_logger
-
 from queue import Empty, Queue
 
 import numpy as np
@@ -16,7 +14,9 @@ from textual.reactive import reactive
 from textual.widgets import Footer, Header
 from textual.worker import get_current_worker
 
+from api_client import SwearAPIClient
 from audio import SAMPLE_RATE, AudioCapture
+from cli import parse_args
 from config import (
 	get_api_config,
 	get_device_channel,
@@ -26,9 +26,8 @@ from config import (
 	save_device_channel,
 )
 from halp import Halp
+from logging_setup import get_logger
 from processing import SAMPLES_PER_BUFFER, process_audio_buffer
-from api_client import SwearAPIClient
-from cli import parse_args
 from swear_detection import SwearDetector
 from transcription import TranscriptionEngine
 from widgets import (
@@ -141,6 +140,9 @@ class VoxAnalysis(App):
 		# Set API configured state
 		self.api_configured = self._api_configured
 
+		# Show loaded word count
+		self.notify(f'Loaded {self.swear_detector.word_count} swear words.')
+
 	def _update_level(self, level: float) -> None:
 		"""Update audio level (called from audio thread)."""
 		self.audio_level = level
@@ -152,7 +154,7 @@ class VoxAnalysis(App):
 	def _process_swears(self, text: str) -> None:
 		"""Detect and report swears in transcribed text."""
 		count, detected = self.swear_detector.detect(text)
-		if count > 0:
+		if count > 0 and self.api_client:
 			self.api_client.report_swears(count)
 			log.info(f'Reported {count} swear(s): {detected}')
 
@@ -190,7 +192,9 @@ class VoxAnalysis(App):
 			self.notify('Model is still loading...', severity='warning')
 			return
 		if not self.api_configured:
-			self.notify('API not configured. Set base URL and API key.', severity='warning')
+			self.notify(
+				'API not configured. Set base URL and API key.', severity='warning'
+			)
 			self.action_configure_api()
 			return
 		if self.is_recording:
@@ -355,9 +359,7 @@ class VoxAnalysis(App):
 if __name__ == '__main__':
 	args = parse_args()
 
-	print(f'Loading word list from {args.word_list}...')
 	swear_detector = SwearDetector(args.word_list)
-	print(f'Loaded {swear_detector.word_count} swear words.')
 
 	# Load from config, CLI overrides
 	saved_base_url, saved_api_key = get_api_config()
