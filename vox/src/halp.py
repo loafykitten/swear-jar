@@ -6,10 +6,8 @@ from textual.widgets import Footer, Header, Label
 
 class Halp(Screen):
 	BINDINGS = [
-		Binding(key='q', action='quit', description='Quit the app'),
-		Binding(
-			key='question_mark', action='app.pop_screen', description='Exit help screen'
-		),
+		Binding(key='q', action='quit', description='Quit'),
+		Binding(key='question_mark', action='app.pop_screen', description='Return'),
 	]
 
 	def compose(self) -> ComposeResult:

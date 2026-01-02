@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+MODEL_SIZES = ['tiny', 'base', 'small', 'medium', 'large']
+
+
 @dataclass
 class VoxArgs:
 	"""Parsed CLI arguments for Vox."""
@@ -12,6 +15,7 @@ class VoxArgs:
 	base_url: str | None
 	api_key: str | None
 	word_list: Path
+	model_size: str | None
 
 
 def get_default_word_list() -> Path:
@@ -59,6 +63,15 @@ def parse_args() -> VoxArgs:
 		help='Path to swear words file (default: vox/swear_words.txt)',
 	)
 
+	parser.add_argument(
+		'-m',
+		'--model-size',
+		type=str,
+		choices=MODEL_SIZES,
+		default=None,
+		help='Whisper model size (overrides saved config)',
+	)
+
 	args = parser.parse_args()
 
 	word_list = args.word_list if args.word_list else get_default_word_list()
@@ -70,4 +83,5 @@ def parse_args() -> VoxArgs:
 		base_url=args.base_url,
 		api_key=args.api_key,
 		word_list=word_list,
+		model_size=args.model_size,
 	)

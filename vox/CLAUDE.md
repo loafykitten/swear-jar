@@ -170,6 +170,60 @@ textual console
 uv run python src/main.py
 ```
 
+## Debugging in Textual
+
+**IMPORTANT**: `print()` does NOT work inside Textual apps. Textual takes over the terminal, so any `print()` statements inside the app (screens, widgets, etc.) will not be visible.
+
+For debugging inside the running app:
+- Use `self.notify("debug message")` to show toast notifications
+- Use the `textual console` dev tools (see above)
+- Use logging to a file
+
+```python
+# Works BEFORE app.run() is called
+print("This will show in terminal")
+
+# Inside the app - use notify instead
+def some_method(self):
+    # print("This won't show!")  # DON'T DO THIS
+    self.notify(f"Debug: value={some_value}")  # DO THIS
+```
+
+## Textual Screen Lifecycle
+
+Screen lifecycle methods:
+- `__init__` - Called once when screen is first created
+- `compose` - Called once to build the widget tree
+- `on_mount` - Called once when screen is first mounted to the DOM
+- `on_show` - Called EVERY time the screen becomes visible
+
+**IMPORTANT**: If you register a screen in the `SCREENS` dict, Textual caches the instance. Use `on_show` (not `on_mount`) to refresh data each time the screen is displayed.
+
+```python
+# BAD - only runs once if screen is cached
+def on_mount(self) -> None:
+    self._load_config()
+
+# GOOD - runs every time screen is shown
+def on_show(self) -> None:
+    self._load_config()
+```
+
+## Textual Select Widget Gotchas
+
+The `Select.set_options()` method resets the selection. If you need to update options AND set a value, use `call_after_refresh` to defer the value assignment:
+
+```python
+def _update_select(self) -> None:
+    select = self.query_one('#my-select', Select)
+    select.set_options(new_options)
+    # DON'T set value here - set_options resets it
+    self.call_after_refresh(self._set_select_value)
+
+def _set_select_value(self) -> None:
+    self.query_one('#my-select', Select).value = self.current_value
+```
+
 ## Common Commands
 
 ```bash

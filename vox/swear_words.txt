@@ -3,6 +3,7 @@
 # Lines starting with # are comments
 
 ass
+asshole
 bastard
 bitch
 cock

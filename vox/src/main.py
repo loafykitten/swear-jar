@@ -2,10 +2,17 @@
 Captures user microphone audio in realtime and uses speech-to-text to detect user-defined swear words and interact with the swear-jar service upon detection.
 """
 
-# Import logging_setup first to configure logging before other modules
+# Disable tqdm and huggingface progress bars BEFORE any imports to avoid
+# multiprocessing lock issues when loading models inside Textual worker threads
+import os
+
+os.environ['HF_HUB_DISABLE_PROGRESS_BARS'] = '1'
+os.environ['TQDM_DISABLE'] = '1'
+
 from queue import Empty, Queue
 
 import numpy as np
+import psutil
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -20,20 +27,17 @@ from cli import parse_args
 from config import (
 	get_api_config,
 	get_device_channel,
+	get_model_size,
 	get_saved_device,
-	save_api_config,
-	save_device,
-	save_device_channel,
+	save_model_size,
 )
+from config_screen import ConfigSaved, ConfigScreen
 from halp import Halp
 from logging_setup import get_logger
 from processing import SAMPLES_PER_BUFFER, process_audio_buffer
 from swear_detection import SwearDetector
 from transcription import TranscriptionEngine
 from widgets import (
-	ApiConfigScreen,
-	ChannelSelectScreen,
-	DeviceSelectScreen,
 	StatusPanel,
 	TranscriptView,
 )
@@ -53,36 +57,37 @@ class VoxAnalysis(App):
 			key_display='?',
 		),
 		Binding(key='space', action='toggle_recording', description='Record'),
-		Binding(key='r', action='clear_transcript', description='Clear'),
-		Binding(key='m', action='select_microphone', description='Mic'),
-		Binding(key='c', action='configure_api', description='Config'),
+		Binding(key='c', action='open_config', description='Config'),
 	]
 
 	is_recording = reactive(False)
 	is_loading = reactive(False)
-	model_ready = reactive(True)
+	model_ready = reactive(False)  # Starts False, set True after async load
 	api_configured = reactive(False)
 	selected_device_id: reactive[int | None] = reactive(None)
 	selected_device_name: reactive[str] = reactive('System Default')
 	audio_level: reactive[float] = reactive(0.0)
 	selected_channel: reactive[int] = reactive(0)
 	selected_channel_count: reactive[int] = reactive(1)
+	selected_model: reactive[str] = reactive('base')
 
 	def __init__(
 		self,
-		transcription_engine: TranscriptionEngine,
 		swear_detector: SwearDetector,
 		api_client: SwearAPIClient | None,
 		initial_base_url: str | None = None,
 		initial_api_key: str | None = None,
+		initial_model_size: str = 'base',
 	):
 		super().__init__()
+		self._process = psutil.Process()
 		self.audio_queue: Queue = Queue()
 		self.swear_detector = swear_detector
 		self.api_client = api_client
 		self._base_url = initial_base_url
 		self._api_key = initial_api_key
 		self._api_configured = api_client is not None
+		self._initial_model_size = initial_model_size
 
 		# Load saved device preference
 		saved_id, saved_name = get_saved_device()
@@ -112,7 +117,7 @@ class VoxAnalysis(App):
 			on_error=lambda msg: self.call_from_thread(self.notify, msg),
 			on_level=lambda lvl: self.call_from_thread(self._update_level, lvl),
 		)
-		self.transcription_engine = transcription_engine
+		self.transcription_engine: TranscriptionEngine | None = None
 
 	def compose(self) -> ComposeResult:
 		yield Header()
@@ -129,7 +134,8 @@ class VoxAnalysis(App):
 
 	def on_mount(self) -> None:
 		self.title = 'Swear Jar'
-		self.sub_title = '(Vox Analysis)'
+		self._update_stats()
+		self.set_interval(1.0, self._update_stats)
 
 		# Apply saved device and channel selection
 		self.selected_device_id = self._initial_device_id
@@ -140,12 +146,27 @@ class VoxAnalysis(App):
 		# Set API configured state
 		self.api_configured = self._api_configured
 
+		# Set initial model and start async loading
+		self.selected_model = self._initial_model_size
+		self.notify(f'Loading {self._initial_model_size} model...')
+		self._load_initial_model()
+
 		# Show loaded word count
 		self.notify(f'Loaded {self.swear_detector.word_count} swear words.')
 
 	def _update_level(self, level: float) -> None:
 		"""Update audio level (called from audio thread)."""
 		self.audio_level = level
+
+	def _update_stats(self) -> None:
+		"""Update CPU/memory stats for this process in header subtitle."""
+		cpu = self._process.cpu_percent()
+		mem_bytes = self._process.memory_info().rss
+		if mem_bytes >= 1024**3:
+			mem_str = f'{mem_bytes / (1024**3):.1f} GB'
+		else:
+			mem_str = f'{mem_bytes / (1024**2):.1f} MB'
+		self.sub_title = f'CPU: {cpu:.1f}% | MEM: {mem_str}'
 
 	def _append_transcript(self, text: str) -> None:
 		"""Append text to transcript (called from main thread via call_from_thread)."""
@@ -195,107 +216,119 @@ class VoxAnalysis(App):
 			self.notify(
 				'API not configured. Set base URL and API key.', severity='warning'
 			)
-			self.action_configure_api()
+			self.action_open_config()
 			return
 		if self.is_recording:
 			self.stop_recording()
 		else:
 			self.start_recording()
 
-	def action_clear_transcript(self) -> None:
-		"""Clear the transcript display."""
-		self.query_one('#transcript', TranscriptView).clear_text()
+	def action_open_config(self) -> None:
+		"""Open configuration screen with fresh instance."""
+		self.push_screen(ConfigScreen())
 
-	def action_select_microphone(self) -> None:
-		"""Open device selection modal."""
-		devices = AudioCapture.list_devices()
+	def on_config_saved(self, event: ConfigSaved) -> None:
+		"""Handle configuration save from ConfigScreen."""
+		# Update device state
+		self.selected_device_id = event.device_id
+		self.selected_device_name = event.device_name
+		self.selected_channel = event.channel
+		self.selected_channel_count = event.channel_count
 
-		def on_channel_selected(
-			channel: int | None,
-			device_id: int | None,
-			device_name: str,
-			channel_count: int,
-		) -> None:
-			"""Handle channel selection result."""
-			if channel is None:
-				# User cancelled channel selection - keep device, use default channel
-				channel = 0
+		# Reload model if changed
+		if event.model != self.selected_model:
+			was_recording = self.is_recording
+			if was_recording:
+				self.stop_recording()
+			self.model_ready = False
+			self.notify(f'Loading {event.model} model...')
+			self._reload_model(event.model, was_recording)
 
-			# Update state
-			self.selected_device_id = device_id
-			self.selected_device_name = device_name
-			self.selected_channel = channel
-			self.selected_channel_count = channel_count
+		# Update API client if changed
+		if event.base_url and event.api_key:
+			self._base_url = event.base_url
+			self._api_key = event.api_key
+			self.api_client = SwearAPIClient(event.base_url, event.api_key)
+			self.api_configured = True
 
-			# Persist selection
-			save_device(device_id, device_name)
-			if device_id is not None:
-				save_device_channel(device_id, channel)
+		# Restart audio capture if recording and device changed
+		if self.is_recording:
+			self.audio_capture.stop()
+			self.audio_capture.start(
+				device_id=event.device_id, channel=event.channel
+			)
 
-			# Restart capture if recording
-			if self.is_recording:
-				self.audio_capture.stop()
-				self.audio_capture.start(device_id=device_id, channel=channel)
+		self.notify('Configuration saved')
 
-			channel_info = f' (Ch {channel + 1})' if channel_count > 1 else ''
-			self.notify(f'Selected: {device_name}{channel_info}')
+	@work(thread=True, exclusive=True, group='model_reload')
+	def _load_initial_model(self) -> None:
+		"""Load the initial transcription model in a background thread."""
+		# Monkey-patch tqdm to avoid multiprocessing lock issues in worker threads
+		import contextlib
 
-		def on_device_selected(result: int | None) -> None:
-			"""Handle device selection result."""
-			# None means user cancelled - do nothing
-			if result is None and self.selected_device_id is not None:
-				return
+		import tqdm.std
 
-			device_id = result
-			device_name = 'System Default'
-			channel_count = 1
+		tqdm.std.TqdmDefaultWriteLock = contextlib.nullcontext  # type: ignore[attr-defined]
 
-			if device_id is not None:
-				# Find device info
-				for d in devices:
-					if d['id'] == device_id:
-						device_name = d['name']
-						channel_count = d['channels']
-						break
+		try:
+			self.transcription_engine = TranscriptionEngine(
+				model_size=self._initial_model_size
+			)
+			self.transcription_engine._ensure_model_loaded()
+			self.call_from_thread(self._on_initial_model_loaded)
+		except Exception as e:
+			log.exception(f'Failed to load model: {e}')
+			self.call_from_thread(
+				self.notify, f'Failed to load model: {e}', severity='error'
+			)
+			self.call_from_thread(self._on_model_load_failed)
 
-			# If multi-channel device, show channel selection
-			if channel_count > 1:
-				saved_channel = get_device_channel(device_id) if device_id else 0
-				# Validate saved channel is within range
-				if saved_channel >= channel_count:
-					saved_channel = 0
-				self.push_screen(
-					ChannelSelectScreen(device_name, channel_count, saved_channel),
-					lambda ch: on_channel_selected(
-						ch, device_id, device_name, channel_count
-					),
-				)
-			else:
-				# Single channel - proceed directly
-				on_channel_selected(0, device_id, device_name, channel_count)
+	def _on_initial_model_loaded(self) -> None:
+		"""Called when initial model loading completes."""
+		self.model_ready = True
+		self.notify(f'Model {self._initial_model_size} ready')
 
-		self.push_screen(
-			DeviceSelectScreen(devices, self.selected_device_id),
-			on_device_selected,
-		)
+	def _on_model_load_failed(self) -> None:
+		"""Called when model loading fails - prompt user to configure."""
+		self.push_screen(ConfigScreen())
 
-	def action_configure_api(self) -> None:
-		"""Open API configuration modal."""
+	@work(thread=True, exclusive=True, group='model_reload')
+	def _reload_model(self, new_model: str, resume_recording: bool) -> None:
+		"""Reload the transcription model in a background thread."""
+		# Monkey-patch tqdm to avoid multiprocessing lock issues in worker threads
+		import contextlib
 
-		def on_config_saved(result: tuple[str, str] | None) -> None:
-			if result:
-				base_url, api_key = result
-				save_api_config(base_url, api_key)
-				self._base_url = base_url
-				self._api_key = api_key
-				self.api_client = SwearAPIClient(base_url, api_key)
-				self.api_configured = True
-				self.notify('API configuration saved')
+		import tqdm.std
 
-		self.push_screen(
-			ApiConfigScreen(self._base_url, self._api_key),
-			on_config_saved,
-		)
+		tqdm.std.TqdmDefaultWriteLock = contextlib.nullcontext  # type: ignore[attr-defined]
+
+		try:
+			# Unload current model if exists
+			if self.transcription_engine is not None:
+				self.transcription_engine.unload()
+
+			# Create and load new model
+			self.transcription_engine = TranscriptionEngine(model_size=new_model)
+			self.transcription_engine._ensure_model_loaded()
+
+			# Update state on main thread
+			self.call_from_thread(self._on_model_loaded, new_model, resume_recording)
+		except Exception as e:
+			log.exception(f'Failed to load model: {e}')
+			self.call_from_thread(
+				self.notify, f'Failed to load model: {e}', severity='error'
+			)
+			self.call_from_thread(setattr, self, 'model_ready', True)
+
+	def _on_model_loaded(self, new_model: str, resume_recording: bool) -> None:
+		"""Called when model loading completes."""
+		self.selected_model = new_model
+		self.model_ready = True
+		save_model_size(new_model)
+		self.notify(f'Model changed to {new_model}')
+
+		if resume_recording:
+			self.start_recording()
 
 	def start_recording(self) -> None:
 		"""Start audio capture and transcription."""
@@ -320,6 +353,10 @@ class VoxAnalysis(App):
 	@work(thread=True, exclusive=True, group='transcription')
 	def _run_transcription_worker(self) -> None:
 		"""Background worker that processes audio and transcribes it."""
+		# Engine is guaranteed to exist because recording requires model_ready=True
+		assert self.transcription_engine is not None, 'Engine must be loaded'
+		engine = self.transcription_engine
+
 		worker = get_current_worker()
 		audio_buffer: list[np.ndarray] = []
 		total_samples = 0
@@ -335,7 +372,7 @@ class VoxAnalysis(App):
 				chunks_received += 1
 
 				if total_samples >= SAMPLES_PER_BUFFER:
-					text = process_audio_buffer(audio_buffer, self.transcription_engine)
+					text = process_audio_buffer(audio_buffer, engine)
 					if text.strip():
 						self.call_from_thread(self._append_transcript, text)
 						self.call_from_thread(self._process_swears, text)
@@ -350,7 +387,7 @@ class VoxAnalysis(App):
 		# Process any remaining audio in buffer
 		if audio_buffer and total_samples > SAMPLE_RATE * 0.5:
 			log.info(f'Final flush: {total_samples} samples')
-			text = process_audio_buffer(audio_buffer, self.transcription_engine)
+			text = process_audio_buffer(audio_buffer, engine)
 			if text.strip():
 				self.call_from_thread(self._append_transcript, text)
 				self.call_from_thread(self._process_swears, text)
@@ -374,15 +411,16 @@ if __name__ == '__main__':
 	else:
 		print('API not configured. Press [c] to configure.')
 
-	print('Loading Whisper model...')
-	engine = TranscriptionEngine()
-	engine._ensure_model_loaded()
-	print('Model loaded. Starting app...')
+	# Load model size from config, CLI overrides
+	saved_model_size = get_model_size()
+	model_size = args.model_size or saved_model_size
+
+	print(f'Starting app (model {model_size} will load in background)...')
 
 	VoxAnalysis(
-		engine,
 		swear_detector,
 		api_client,
 		initial_base_url=base_url,
 		initial_api_key=api_key,
+		initial_model_size=model_size,
 	).run()

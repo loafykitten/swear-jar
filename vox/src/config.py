@@ -16,6 +16,7 @@ class VoxConfig(TypedDict, total=False):
 	device_channels: dict[str, int]  # Key: str(device_id), Value: channel index
 	base_url: str | None
 	api_key: str | None
+	model_size: str | None
 
 
 def load_config() -> VoxConfig:
@@ -86,4 +87,17 @@ def save_api_config(base_url: str, api_key: str) -> None:
 	config = load_config()
 	config['base_url'] = base_url
 	config['api_key'] = api_key
+	save_config(config)
+
+
+def get_model_size() -> str:
+	"""Get saved model size (defaults to 'base')."""
+	config = load_config()
+	return config.get('model_size') or 'base'
+
+
+def save_model_size(size: str) -> None:
+	"""Save model size preference."""
+	config = load_config()
+	config['model_size'] = size
 	save_config(config)
