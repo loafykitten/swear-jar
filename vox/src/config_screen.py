@@ -141,12 +141,10 @@ class ConfigScreen(Screen):
 				password=True,
 			)
 
-			yield Rule()
-
-			# === BUTTONS ===
-			with Horizontal(id='button-row'):
-				yield Button('Cancel', variant='default', id='cancel-btn')
-				yield Button('Save', variant='primary', id='save-btn')
+		# === BUTTONS (outside scroll container for fixed positioning) ===
+		with Horizontal(id='button-row'):
+			yield Button('Cancel', variant='default', id='cancel-btn')
+			yield Button('Save', variant='primary', id='save-btn')
 
 		yield Footer()
 

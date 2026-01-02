@@ -29,7 +29,9 @@ ConfigScreen {
 
 #button-row {
 	align: center middle;
-	margin-top: 2;
+	height: auto;
+	padding: 2;
+	dock: bottom;
 }
 
 #button-row Button {
