@@ -1,5 +1,5 @@
 import { test, expect, describe, beforeEach } from "bun:test"
-import { getSwears, incrementSwears, decrementSwears, resetSwears } from "./swears-store"
+import { getSwears, updateSwears, resetSwears } from "./swears-store"
 
 describe("swears-store", () => {
 	beforeEach(() => {
@@ -11,33 +11,33 @@ describe("swears-store", () => {
 		expect(getSwears()).toBe(0)
 	})
 
-	test("incrementSwears increases count by 1", () => {
-		expect(incrementSwears()).toBe(true)
+	test("updateSwears increases count with positive value", () => {
+		expect(updateSwears(1)).toBe(true)
 		expect(getSwears()).toBe(1)
 
-		expect(incrementSwears()).toBe(true)
+		expect(updateSwears(1)).toBe(true)
 		expect(getSwears()).toBe(2)
+
+		expect(updateSwears(3)).toBe(true)
+		expect(getSwears()).toBe(5)
 	})
 
-	test("decrementSwears decreases count by 1", () => {
-		incrementSwears()
-		incrementSwears()
+	test("updateSwears decreases count with negative value", () => {
+		updateSwears(2)
 		expect(getSwears()).toBe(2)
 
-		expect(decrementSwears()).toBe(true)
+		expect(updateSwears(-1)).toBe(true)
 		expect(getSwears()).toBe(1)
 	})
 
-	test("decrementSwears doesn't go below 0", () => {
+	test("updateSwears doesn't go below 0", () => {
 		expect(getSwears()).toBe(0)
-		expect(decrementSwears()).toBe(false)
+		expect(updateSwears(-1)).toBe(false)
 		expect(getSwears()).toBe(0)
 	})
 
 	test("resetSwears sets count to 0", () => {
-		incrementSwears()
-		incrementSwears()
-		incrementSwears()
+		updateSwears(3)
 		expect(getSwears()).toBe(3)
 
 		expect(resetSwears()).toBe(true)

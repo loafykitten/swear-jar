@@ -22,10 +22,11 @@ class SwearDetector:
 		"""
 		self.word_list_path = Path(word_list_path)
 		self._swear_words: set[str] = set()
+		self._pattern: re.Pattern[str] | None = None
 		self._load_word_list()
 
 	def _load_word_list(self) -> None:
-		"""Load swear words from file."""
+		"""Load swear words from file and pre-compile regex pattern."""
 		if not self.word_list_path.exists():
 			raise FileNotFoundError(
 				f'Word list file not found: {self.word_list_path}'
@@ -36,6 +37,12 @@ class SwearDetector:
 				word = line.strip().lower()
 				if word and not word.startswith('#'):
 					self._swear_words.add(word)
+
+		# Pre-compile combined regex pattern for O(1) detection
+		if self._swear_words:
+			escaped = [re.escape(word) for word in self._swear_words]
+			pattern = r'\b(' + '|'.join(escaped) + r')\b'
+			self._pattern = re.compile(pattern, re.IGNORECASE)
 
 		log.info(
 			f'Loaded {len(self._swear_words)} swear words from {self.word_list_path}'
@@ -51,16 +58,11 @@ class SwearDetector:
 			Tuple of (total_count, list_of_detected_words).
 			If "damn" appears twice, count=2 and list contains "damn" twice.
 		"""
-		if not text:
+		if not text or not self._pattern:
 			return 0, []
 
-		text_lower = text.lower()
-		detected: list[str] = []
-
-		for swear_word in self._swear_words:
-			pattern = r'\b' + re.escape(swear_word) + r'\b'
-			matches = re.findall(pattern, text_lower)
-			detected.extend(matches)
+		matches = self._pattern.findall(text)
+		detected = [match.lower() for match in matches]
 
 		if detected:
 			log.info(f'Detected {len(detected)} swear(s) in text: {detected}')

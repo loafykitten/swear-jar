@@ -6,6 +6,10 @@ from typing import Any, Callable, cast
 import numpy as np
 import sounddevice as sd
 
+from logging_setup import get_logger
+
+log = get_logger(__name__)
+
 SAMPLE_RATE = 16000
 CHANNELS = 1
 DTYPE = 'float32'
@@ -78,13 +82,13 @@ class AudioCapture:
 		else:
 			self._num_channels = CHANNELS
 
-		# Debug: print device info
+		# Log device info
 		if device_id is not None:
 			device_info = cast(dict[str, Any], sd.query_devices(device_id))
-			print(f'[AUDIO] Device: {device_info["name"]}')
-			print(f'[AUDIO] Native sample rate: {device_info["default_samplerate"]}Hz')
-			print(f'[AUDIO] Max input channels: {device_info["max_input_channels"]}')
-			print(f'[AUDIO] Requesting: {SAMPLE_RATE}Hz, {self._num_channels} ch, channel {channel}')
+			log.info(f'Device: {device_info["name"]}')
+			log.debug(f'Native sample rate: {device_info["default_samplerate"]}Hz')
+			log.debug(f'Max input channels: {device_info["max_input_channels"]}')
+			log.debug(f'Requesting: {SAMPLE_RATE}Hz, {self._num_channels} ch, channel {channel}')
 
 		self.stream = sd.InputStream(
 			samplerate=SAMPLE_RATE,
@@ -96,7 +100,14 @@ class AudioCapture:
 		)
 		self.stream.start()
 		self._running = True
-		print(f'[AUDIO] Stream started: actual sample rate = {self.stream.samplerate}Hz')
+
+		# Validate actual audio parameters match requested
+		actual_rate = self.stream.samplerate
+		log.info(f'Stream started: actual sample rate = {actual_rate}Hz')
+		if actual_rate != SAMPLE_RATE:
+			log.warning(f'Sample rate mismatch: requested {SAMPLE_RATE}Hz, got {actual_rate}Hz')
+			if self.on_error:
+				self.on_error(f'Audio sample rate mismatch: {actual_rate}Hz (expected {SAMPLE_RATE}Hz)')
 
 	def stop(self) -> None:
 		"""Stop capturing audio."""

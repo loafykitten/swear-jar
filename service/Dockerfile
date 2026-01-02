@@ -3,20 +3,17 @@
 FROM oven/bun:1 AS base
 WORKDIR /app
 
-# Copy workspace structure (ALL package.json files for workspace resolution)
+# Copy workspace structure for dependency resolution
 FROM base AS install
 COPY package.json bun.lock ./
-COPY shared/package.json ./shared/
 COPY service/package.json ./service/
-COPY vox/package.json ./vox/
 
-# Install all workspace dependencies
+# Install workspace dependencies
 RUN bun install --frozen-lockfile
 
 # Copy source and run tests
 FROM base AS prerelease
 COPY --from=install /app/node_modules ./node_modules
-COPY shared ./shared
 COPY service ./service
 
 # Run tests from service directory
@@ -29,7 +26,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=install /app/node_modules ./node_modules
-COPY --from=prerelease /app/shared ./shared
 COPY --from=prerelease /app/service ./service
 
 # Create writable data directory for sqlite

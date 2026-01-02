@@ -233,7 +233,28 @@ class ConfigScreen(Screen):
 		self.current_api_key = api_key or ''
 
 	def _apply_config_to_widgets(self) -> None:
-		"""Apply loaded config values to widgets."""
+		"""Apply loaded config values to widgets.
+
+		Widget Hydration with Textual's Select Widget
+		---------------------------------------------
+		Textual's Select.set_options() resets the widget's value to None asynchronously
+		after the method returns. This means we cannot set options and value in the same
+		synchronous call - the value would be immediately overwritten.
+
+		The solution uses a cascade of 50ms timers to defer value assignment until
+		after Textual's internal state updates have completed:
+
+		1. set_options() called for all Select widgets
+		2. Wait 50ms -> _set_select_values(): Set device and model values
+		3. Wait 50ms -> _set_channel_value(): Set channel value and show widget
+
+		The second delay is needed because setting the device value triggers
+		on_select_changed -> _on_device_changed, which calls set_options() on the
+		channel select, creating another async reset.
+
+		The _hydrating flag prevents change handlers from firing during this process,
+		avoiding unwanted side effects and infinite loops.
+		"""
 		# Suppress change handlers during hydration
 		self._hydrating = True
 		# Update device select options
@@ -255,14 +276,14 @@ class ConfigScreen(Screen):
 		self.set_timer(0.05, self._set_select_values)
 
 	def _set_select_values(self) -> None:
-		"""Set select values after set_options() has fully processed."""
+		"""Set select values after set_options() has fully processed (step 2 of hydration)."""
 		self.query_one('#device-select', Select).value = self.current_device_id
 		self.query_one('#model-select', Select).value = self.current_model
 		# Defer channel assignment - device change triggers more set_options() calls
 		self.set_timer(0.05, self._set_channel_value)
 
 	def _set_channel_value(self) -> None:
-		"""Set channel value after all cascading events have settled."""
+		"""Set channel value after all cascading events have settled (step 3 of hydration)."""
 		channel_select = self.query_one('#channel-select', Select)
 		channel_select.value = self.current_channel
 		channel_select.display = True  # Show after correct value is set

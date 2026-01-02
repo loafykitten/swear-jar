@@ -54,14 +54,14 @@ const onWorkerMessage = (
 			}),
 		)
 	} catch (ex) {
-		if (ex instanceof BadWorkerDataError)
-			logger.error('FATAL: onWorkerMessage received bad data')
-		else if (ex instanceof NonOpenWebSocketError)
-			logger.error('FATAL: onWorkerMessage ws was not open for sending')
-		else logger.error('FATAL: Unknown error occurred')
-
-		console.error(ex)
-		process.exit(1)
+		if (ex instanceof BadWorkerDataError) {
+			logger.error('onWorkerMessage received bad data from worker')
+		} else if (ex instanceof NonOpenWebSocketError) {
+			logger.debug('onWorkerMessage: WebSocket already closed, ignoring')
+		} else {
+			logger.error('onWorkerMessage: Unexpected error occurred')
+			logger.error(ex)
+		}
 	}
 }
 

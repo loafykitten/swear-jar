@@ -15,6 +15,6 @@
 	"devDependencies": {
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
-		"@types/bun": "latest"
+		"@types/bun": "^1.2.0"
 	}
 }

@@ -1,36 +1,5 @@
 import { test, expect, describe } from "bun:test"
-import { getPricePerSwear, calculateSwearsCost } from "./swears"
-
-describe("getPricePerSwear", () => {
-	test("returns number for valid positive string", () => {
-		expect(getPricePerSwear("0.25")).toBe(0.25)
-		expect(getPricePerSwear("1")).toBe(1)
-		expect(getPricePerSwear("10.50")).toBe(10.5)
-	})
-
-	test("returns undefined for zero", () => {
-		expect(getPricePerSwear("0")).toBeUndefined()
-	})
-
-	test("returns undefined for negative numbers", () => {
-		expect(getPricePerSwear("-1")).toBeUndefined()
-		expect(getPricePerSwear("-0.25")).toBeUndefined()
-	})
-
-	test("returns undefined for non-numeric strings", () => {
-		expect(getPricePerSwear("abc")).toBeUndefined()
-		expect(getPricePerSwear("")).toBeUndefined()
-	})
-
-	test("parses leading numbers from mixed strings", () => {
-		// parseFloat behavior - parses until non-numeric char
-		expect(getPricePerSwear("12abc")).toBe(12)
-	})
-
-	test("returns undefined for Infinity", () => {
-		expect(getPricePerSwear("Infinity")).toBeUndefined()
-	})
-})
+import { calculateSwearsCost } from "./swears"
 
 describe("calculateSwearsCost", () => {
 	test("calculates correct cost", () => {

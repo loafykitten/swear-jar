@@ -19,22 +19,41 @@ class VoxConfig(TypedDict, total=False):
 	model_size: str | None
 
 
+# Module-level cache to avoid repeated disk I/O
+_config_cache: VoxConfig | None = None
+
+
 def load_config() -> VoxConfig:
-	"""Load configuration from disk."""
+	"""Load configuration from disk (cached after first load)."""
+	global _config_cache
+	if _config_cache is not None:
+		return _config_cache
+
 	if not CONFIG_FILE.exists():
-		return {}
+		_config_cache = {}
+		return _config_cache
 	try:
 		with open(CONFIG_FILE, 'r') as f:
-			return json.load(f)
+			_config_cache = json.load(f)
+			return _config_cache
 	except (json.JSONDecodeError, IOError):
-		return {}
+		_config_cache = {}
+		return _config_cache
 
 
 def save_config(config: VoxConfig) -> None:
-	"""Save configuration to disk."""
+	"""Save configuration to disk and update cache."""
+	global _config_cache
 	CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 	with open(CONFIG_FILE, 'w') as f:
 		json.dump(config, f, indent=2)
+	_config_cache = config
+
+
+def invalidate_config_cache() -> None:
+	"""Invalidate the config cache to force reload from disk."""
+	global _config_cache
+	_config_cache = None
 
 
 def get_saved_device() -> tuple[int | None, str | None]:

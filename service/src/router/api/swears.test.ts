@@ -87,9 +87,9 @@ describe('SwearsRoutingAPI', () => {
 	})
 
 	describe('POST /api/swears', () => {
-		test('increments count with updateType=increment', async () => {
+		test('increments count with by=1', async () => {
 			const req = createRequest('POST', {
-				updateType: 'increment',
+				by: '1',
 				pricePerSwear: '0.25',
 			})
 			const url = new URL(req.url)
@@ -108,10 +108,10 @@ describe('SwearsRoutingAPI', () => {
 			expect(data.cost).toBe(0.25)
 		})
 
-		test('decrements count with updateType=decrement', async () => {
+		test('decrements count with by=-1', async () => {
 			// First increment to 1
 			const req1 = createRequest('POST', {
-				updateType: 'increment',
+				by: '1',
 				pricePerSwear: '0.25',
 			})
 			SwearsRoutingAPI.processRequest(
@@ -123,7 +123,7 @@ describe('SwearsRoutingAPI', () => {
 
 			// Then decrement
 			const req2 = createRequest('POST', {
-				updateType: 'decrement',
+				by: '-1',
 				pricePerSwear: '0.25',
 			})
 			const url = new URL(req2.url)
@@ -141,9 +141,9 @@ describe('SwearsRoutingAPI', () => {
 			expect(data.swears).toBe(0)
 		})
 
-		test('returns 400 for invalid updateType', () => {
+		test('returns 400 for invalid by parameter', () => {
 			const req = createRequest('POST', {
-				updateType: 'invalid',
+				by: 'invalid',
 				pricePerSwear: '0.25',
 			})
 			const url = new URL(req.url)
@@ -158,9 +158,44 @@ describe('SwearsRoutingAPI', () => {
 			expect(response.status).toBe(400)
 		})
 
+		test('returns 400 for non-integer by parameter', () => {
+			const req = createRequest('POST', {
+				by: '1.5',
+				pricePerSwear: '0.25',
+			})
+			const url = new URL(req.url)
+			const clientIp = `test-post-float-${crypto.randomUUID()}`
+
+			const response = SwearsRoutingAPI.processRequest(
+				req,
+				mockWorker,
+				url,
+				clientIp,
+			)
+			expect(response.status).toBe(400)
+		})
+
+		test('returns 400 for decrement below zero', () => {
+			// Try to decrement when count is already 0
+			const req = createRequest('POST', {
+				by: '-1',
+				pricePerSwear: '0.25',
+			})
+			const url = new URL(req.url)
+			const clientIp = `test-post-below-zero-${crypto.randomUUID()}`
+
+			const response = SwearsRoutingAPI.processRequest(
+				req,
+				mockWorker,
+				url,
+				clientIp,
+			)
+			expect(response.status).toBe(400)
+		})
+
 		test('notifies worker on update', () => {
 			const req = createRequest('POST', {
-				updateType: 'increment',
+				by: '1',
 				pricePerSwear: '0.25',
 			})
 			const url = new URL(req.url)
@@ -175,7 +210,7 @@ describe('SwearsRoutingAPI', () => {
 		test('resets count to 0', async () => {
 			// First add some swears
 			const req1 = createRequest('POST', {
-				updateType: 'increment',
+				by: '1',
 				pricePerSwear: '0.25',
 			})
 			SwearsRoutingAPI.processRequest(

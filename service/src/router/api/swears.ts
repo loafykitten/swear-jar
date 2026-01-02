@@ -2,7 +2,8 @@ import type { BunRequest } from 'bun'
 
 import { logger } from '@/utils/logger'
 import { checkApiRateLimit } from '@/utils/rateLimits'
-import { calculateSwearsCost, getPricePerSwear } from '@/utils/swears'
+import { calculateSwearsCost } from '@/utils/swears'
+import { validateByParam, validatePricePerSwear } from '@/utils/validation'
 import { getSwears, resetSwears, updateSwears } from '../../data/swears-store'
 import { defaultResponse } from '../router'
 
@@ -38,19 +39,10 @@ const GET = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 	logger.debug('SwearsAPI (GET)')
 
 	const url = new URL(req.url)
-	const pricePerSwear = getPricePerSwear(
-		url.searchParams.get('pricePerSwear') ?? '',
-	)
-	if (!pricePerSwear) {
-		const response = 'pricePerSwear is malformed in API request'
+	const priceResult = validatePricePerSwear(url)
+	if (!priceResult.success) return priceResult.error
 
-		logger.warn(response)
-		return new Response(response, {
-			status: 400,
-		})
-	}
-
-	return finalizeRequest(pricePerSwear).response
+	return finalizeRequest(priceResult.value).response
 }
 
 const POST = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
@@ -58,39 +50,21 @@ const POST = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 
 	const url = new URL(req.url)
 
-	const by = parseInt(url.searchParams.get('by') || '')
-	if (Number.isNaN(by) || !Number.isFinite(by)) {
-		const response = 'by is malformed in API request'
+	const byResult = validateByParam(url)
+	if (!byResult.success) return byResult.error
 
-		logger.warn(response)
-		return new Response(response, {
-			status: 400,
-		})
-	}
+	const priceResult = validatePricePerSwear(url)
+	if (!priceResult.success) return priceResult.error
 
-	const pricePerSwear = getPricePerSwear(
-		url.searchParams.get('pricePerSwear') ?? '',
-	)
-	if (pricePerSwear === undefined) {
-		const response = 'pricePerSwear is malformed in API request'
-
-		logger.error(response)
-		return new Response(response, {
-			status: 400,
-		})
-	}
-	const result = updateSwears(by)
+	const result = updateSwears(byResult.value)
 
 	if (!result) {
-		const response = `Issue occurred during updateType`
-
-		logger.error(response)
-		return new Response(response, {
-			status: 500,
-		})
+		const response = 'Cannot decrement swears below zero'
+		logger.warn(response)
+		return new Response(response, { status: 400 })
 	}
 
-	const response = finalizeRequest(pricePerSwear)
+	const response = finalizeRequest(priceResult.value)
 	swearsWorker.postMessage(response.data)
 	return response.response
 }
@@ -115,7 +89,7 @@ export const SwearsRoutingAPI = {
 	processRequest: (
 		req: BunRequest,
 		swearsWorker: Worker,
-		url: URL,
+		_url: URL,
 		clientIp: string,
 	) => {
 		if (!checkApiRateLimit(clientIp))

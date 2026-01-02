@@ -260,21 +260,36 @@ class VoxAnalysis(App):
 
 		self.notify('Configuration saved')
 
-	@work(thread=True, exclusive=True, group='model_reload')
-	def _load_initial_model(self) -> None:
-		"""Load the initial transcription model in a background thread."""
-		# Monkey-patch tqdm to avoid multiprocessing lock issues in worker threads
+	def _do_model_load(self, model_size: str) -> TranscriptionEngine:
+		"""Load a transcription model with tqdm workaround (runs in worker thread).
+
+		This method handles the tqdm monkey-patching needed to avoid multiprocessing
+		lock issues when loading faster-whisper models in background threads.
+
+		Args:
+			model_size: The model size to load (e.g., 'base', 'small', 'medium').
+
+		Returns:
+			The loaded TranscriptionEngine instance.
+
+		Raises:
+			Exception: If model loading fails for any reason.
+		"""
 		import contextlib
 
 		import tqdm.std
 
 		tqdm.std.TqdmDefaultWriteLock = contextlib.nullcontext  # type: ignore[attr-defined]
 
+		engine = TranscriptionEngine(model_size=model_size)
+		engine._ensure_model_loaded()
+		return engine
+
+	@work(thread=True, exclusive=True, group='model_reload')
+	def _load_initial_model(self) -> None:
+		"""Load the initial transcription model in a background thread."""
 		try:
-			self.transcription_engine = TranscriptionEngine(
-				model_size=self._initial_model_size
-			)
-			self.transcription_engine._ensure_model_loaded()
+			self.transcription_engine = self._do_model_load(self._initial_model_size)
 			self.call_from_thread(self._on_initial_model_loaded)
 		except Exception as e:
 			log.exception(f'Failed to load model: {e}')
@@ -295,23 +310,12 @@ class VoxAnalysis(App):
 	@work(thread=True, exclusive=True, group='model_reload')
 	def _reload_model(self, new_model: str, resume_recording: bool) -> None:
 		"""Reload the transcription model in a background thread."""
-		# Monkey-patch tqdm to avoid multiprocessing lock issues in worker threads
-		import contextlib
-
-		import tqdm.std
-
-		tqdm.std.TqdmDefaultWriteLock = contextlib.nullcontext  # type: ignore[attr-defined]
-
 		try:
 			# Unload current model if exists
 			if self.transcription_engine is not None:
 				self.transcription_engine.unload()
 
-			# Create and load new model
-			self.transcription_engine = TranscriptionEngine(model_size=new_model)
-			self.transcription_engine._ensure_model_loaded()
-
-			# Update state on main thread
+			self.transcription_engine = self._do_model_load(new_model)
 			self.call_from_thread(self._on_model_loaded, new_model, resume_recording)
 		except Exception as e:
 			log.exception(f'Failed to load model: {e}')

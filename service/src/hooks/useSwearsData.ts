@@ -5,8 +5,8 @@ import { useURLParams } from './useURLParams'
 export const useSwearsData = () => {
 	const { configParams, swearsParams } = useURLParams()
 	const [swearsData, setSwearsData] = useState<SwearsResponse>()
+	const [error, setError] = useState<string>()
 	const wsConnection = useRef<WebSocket | undefined>(undefined)
-	const hasConnected = useRef(false)
 
 	const getSwearsData = useCallback(async () => {
 		try {
@@ -21,13 +21,22 @@ export const useSwearsData = () => {
 
 			const response = await fetch(url)
 			if (!response.ok) throw new Error(`HTTP ${response.status}`)
+			setError(undefined)
 			return response.json() as Promise<SwearsResponse>
-		} catch (ex) {
-			console.error(ex)
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'Fetch failed'
+			setError(message)
+			return undefined
 		}
 	}, [configParams, swearsParams])
 
 	const connectWs = useCallback(() => {
+		// Close existing connection before reconnecting
+		if (wsConnection.current) {
+			wsConnection.current.close()
+			wsConnection.current = undefined
+		}
+
 		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 		const url = new URL(`${protocol}//${window.location.host}/ws/swears`)
 		url.searchParams.append(
@@ -38,39 +47,31 @@ export const useSwearsData = () => {
 
 		wsConnection.current = new WebSocket(url)
 
-		wsConnection.current.onopen = (_event: Event) => {
-			console.log('Browser WS connection established')
+		wsConnection.current.onopen = () => {
+			setError(undefined)
 		}
 
-		wsConnection.current.onclose = (_event: CloseEvent) => {
-			console.log('Browser WS connection closed')
-		}
+		wsConnection.current.onclose = () => {}
 
-		wsConnection.current.onerror = (event: Event) => {
-			console.error('Browser WS error:')
-			console.error(JSON.stringify(event))
+		wsConnection.current.onerror = () => {
+			setError('WebSocket connection error')
 		}
 
 		wsConnection.current.onmessage = (event: MessageEvent) => {
-			console.log('Browser WS message received:')
 			let data: SwearsResponse | undefined
 			if (event.data) {
 				try {
 					data = JSON.parse(event.data)
-				} catch (ex) {
-					console.error(ex)
+				} catch {
+					// Ignore malformed messages
 				}
 			}
-
-			console.log(data)
 			if (data) setSwearsData(data)
 		}
 	}, [configParams, swearsParams])
 
+	// Reconnect when params change
 	useEffect(() => {
-		if (hasConnected.current) return
-		hasConnected.current = true
-
 		getSwearsData().then(res => {
 			if (res) setSwearsData(res)
 		})
@@ -82,10 +83,8 @@ export const useSwearsData = () => {
 				wsConnection.current.close()
 				wsConnection.current = undefined
 			}
-
-			hasConnected.current = false
 		}
-	}, [])
+	}, [getSwearsData, connectWs])
 
-	return { swearsData, maxCost: swearsParams.maxCost }
+	return { swearsData, maxCost: swearsParams.maxCost, error }
 }

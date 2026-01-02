@@ -1,36 +1,14 @@
-import type { RouteValidationResult } from '@/types/RouteValidationResult'
 import type { WebSocketData } from '@/types/WebSocketData'
-import { logger } from '@/utils/logger'
 import { checkWsRateLimit } from '@/utils/rateLimits'
-import { getPricePerSwear } from '@/utils/swears'
+import { validatePricePerSwear } from '@/utils/validation'
 import type { BunRequest, Server } from 'bun'
 
 const validPaths = ['/ws/swears']
-const requiredParams = ['pricePerSwear']
-
-const isValid = (url: URL): RouteValidationResult => {
-	for (const param of requiredParams) {
-		const value = url.searchParams.get(param) as string
-		switch (param) {
-			case 'pricePerSwear':
-				if (getPricePerSwear(value) === undefined)
-					return { param, isValid: false }
-				break
-		}
-	}
-
-	return { isValid: true }
-}
 
 export const SwearsRoutingWS = {
 	isMatch: (url: URL) => {
 		if (!validPaths.includes(url.pathname)) return false
-
-		for (const param of requiredParams) {
-			if (!url.searchParams.has(param)) return false
-		}
-
-		return true
+		return url.searchParams.has('pricePerSwear')
 	},
 	processRequest: (
 		req: BunRequest,
@@ -38,25 +16,14 @@ export const SwearsRoutingWS = {
 		url: URL,
 		clientIp: string,
 	): Response | undefined => {
-		const result = isValid(url)
-		if (!result.isValid) {
-			const response = `${result.param} is malformed in API request`
-
-			logger.warn(response)
-			return new Response(response, {
-				status: 400,
-			})
-		}
+		const priceResult = validatePricePerSwear(url)
+		if (!priceResult.success) return priceResult.error
 
 		if (!checkWsRateLimit(clientIp)) {
 			return new Response('Too many connections', { status: 429 })
 		}
 
-		const pricePerSwear = getPricePerSwear(
-			url.searchParams.get('pricePerSwear') as string,
-		) as number
-
-		const data: WebSocketData = { pricePerSwear, clientIp }
+		const data: WebSocketData = { pricePerSwear: priceResult.value, clientIp }
 		if (server.upgrade(req, { data })) return
 
 		return new Response('Upgrade failed', { status: 500 })
