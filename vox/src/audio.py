@@ -80,7 +80,7 @@ class AudioCapture:
 
 		# Debug: print device info
 		if device_id is not None:
-			device_info = sd.query_devices(device_id)
+			device_info = cast(dict[str, Any], sd.query_devices(device_id))
 			print(f'[AUDIO] Device: {device_info["name"]}')
 			print(f'[AUDIO] Native sample rate: {device_info["default_samplerate"]}Hz')
 			print(f'[AUDIO] Max input channels: {device_info["max_input_channels"]}')

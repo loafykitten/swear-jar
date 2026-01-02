@@ -2,20 +2,8 @@
 Captures user microphone audio in realtime and uses speech-to-text to detect user-defined swear words and interact with the swear-jar service upon detection.
 """
 
-import logging
-import os
-
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-# Set up file logging
-logging.basicConfig(
-	level=logging.DEBUG,
-	format='%(asctime)s [%(levelname)s] %(message)s',
-	handlers=[
-		logging.FileHandler('vox_debug.log', mode='w'),
-	],
-)
-log = logging.getLogger(__name__)
+# Import logging_setup first to configure logging before other modules
+from logging_setup import get_logger
 
 from queue import Empty, Queue
 
@@ -25,93 +13,27 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Vertical
 from textual.reactive import reactive
-from textual.widgets import Footer, Header, Static
+from textual.widgets import Footer, Header
 from textual.worker import get_current_worker
 
-from audio import AudioCapture, SAMPLE_RATE
-from config import get_saved_device, save_device, get_device_channel, save_device_channel
+from audio import SAMPLE_RATE, AudioCapture
+from config import (
+	get_device_channel,
+	get_saved_device,
+	save_device,
+	save_device_channel,
+)
 from halp import Halp
+from processing import SAMPLES_PER_BUFFER, process_audio_buffer
 from transcription import TranscriptionEngine
-from widgets import AudioLevelBar, DeviceDisplay, DeviceSelectScreen, ChannelSelectScreen
+from widgets import (
+	ChannelSelectScreen,
+	DeviceSelectScreen,
+	StatusPanel,
+	TranscriptView,
+)
 
-BUFFER_DURATION_SECONDS = 3.0
-SAMPLES_PER_BUFFER = int(SAMPLE_RATE * BUFFER_DURATION_SECONDS)
-
-
-class StatusPanel(Static):
-	"""Combined status panel with recording state, device info, and level meter."""
-
-	recording = reactive(False)
-	loading = reactive(True)
-	model_ready = reactive(False)
-	device_name = reactive('System Default')
-	audio_level = reactive(0.0)
-	channel = reactive(0)
-	channel_count = reactive(1)
-
-	def compose(self) -> ComposeResult:
-		yield Static(id='status-text')
-		yield DeviceDisplay(id='device-display')
-		yield AudioLevelBar(id='level-bar')
-
-	def on_mount(self) -> None:
-		self._update_status_text()
-
-	def watch_recording(self, recording: bool) -> None:
-		self._update_status_text()
-		level_bar = self.query_one('#level-bar', AudioLevelBar)
-		level_bar.display = recording
-
-	def watch_loading(self, loading: bool) -> None:
-		self._update_status_text()
-
-	def watch_model_ready(self, ready: bool) -> None:
-		self._update_status_text()
-
-	def watch_device_name(self, name: str) -> None:
-		self.query_one('#device-display', DeviceDisplay).device_name = name
-
-	def watch_audio_level(self, level: float) -> None:
-		self.query_one('#level-bar', AudioLevelBar).level = level
-
-	def watch_channel(self, channel: int) -> None:
-		self.query_one('#device-display', DeviceDisplay).channel = channel
-
-	def watch_channel_count(self, count: int) -> None:
-		self.query_one('#device-display', DeviceDisplay).channel_count = count
-
-	def _update_status_text(self) -> None:
-		status = self.query_one('#status-text', Static)
-		if self.loading:
-			status.update('[yellow]Loading model...[/yellow]')
-		elif self.recording:
-			status.update('[red bold]Recording[/red bold]')
-		elif self.model_ready:
-			status.update('[green]Ready[/green] [dim]- Press Space to record[/dim]')
-		else:
-			status.update('[dim]Press Space to start recording[/dim]')
-
-
-class TranscriptView(Static):
-	"""Displays transcribed text."""
-
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self._text = ''
-
-	def append_text(self, text: str) -> None:
-		"""Append new transcribed text."""
-		if text.strip():
-			if self._text:
-				self._text += ' ' + text.strip()
-			else:
-				self._text = text.strip()
-			self.update(self._text)
-
-	def clear_text(self) -> None:
-		"""Clear all transcribed text."""
-		self._text = ''
-		self.update('[dim]Transcription will appear here...[/dim]')
+log = get_logger(__name__)
 
 
 class VoxAnalysis(App):
@@ -156,7 +78,9 @@ class VoxAnalysis(App):
 		# Load saved channel preference for the device
 		if self._initial_device_id is not None:
 			self._initial_channel = get_device_channel(self._initial_device_id)
-			self._initial_channel_count = AudioCapture.get_device_channels(self._initial_device_id)
+			self._initial_channel_count = AudioCapture.get_device_channels(
+				self._initial_device_id
+			)
 			# Validate channel is within range
 			if self._initial_channel >= self._initial_channel_count:
 				self._initial_channel = 0
@@ -176,7 +100,9 @@ class VoxAnalysis(App):
 		yield Container(
 			Vertical(
 				StatusPanel(id='status'),
-				TranscriptView('[dim]Transcription will appear here...[/dim]', id='transcript'),
+				TranscriptView(
+					'[dim]Transcription will appear here...[/dim]', id='transcript'
+				),
 				id='main-content',
 			),
 		)
@@ -302,7 +228,9 @@ class VoxAnalysis(App):
 					saved_channel = 0
 				self.push_screen(
 					ChannelSelectScreen(device_name, channel_count, saved_channel),
-					lambda ch: on_channel_selected(ch, device_id, device_name, channel_count),
+					lambda ch: on_channel_selected(
+						ch, device_id, device_name, channel_count
+					),
 				)
 			else:
 				# Single channel - proceed directly
@@ -345,30 +273,9 @@ class VoxAnalysis(App):
 				chunks_received += 1
 
 				if total_samples >= SAMPLES_PER_BUFFER:
-					audio_data = np.concatenate(audio_buffer)
-					# Audio diagnostics
-					audio_min = float(np.min(audio_data))
-					audio_max = float(np.max(audio_data))
-					audio_rms = float(np.sqrt(np.mean(audio_data**2)))
-					log.info(f'Audio buffer: {len(audio_data)} samples, min={audio_min:.4f}, max={audio_max:.4f}, rms={audio_rms:.4f}')
-
-					# Normalize audio before transcription
-					peak = float(np.max(np.abs(audio_data)))
-					if peak > 0.001:
-						audio_data = audio_data * (0.9 / peak)
-						log.info(f'Normalized audio: peak {peak:.4f} -> 0.9')
-
-					try:
-						log.info('Calling transcription engine...')
-						text = self.transcription_engine.transcribe(audio_data)
-						log.info(f'Transcription result: "{text}" (len={len(text)})')
-					except Exception as e:
-						log.exception(f'Transcription error: {e}')
-						text = ''
-
+					text = process_audio_buffer(audio_buffer, self.transcription_engine)
 					if text.strip():
 						self.call_from_thread(self._append_transcript, text)
-
 					audio_buffer = []
 					total_samples = 0
 
@@ -377,23 +284,10 @@ class VoxAnalysis(App):
 
 		log.info(f'Transcription worker ending. Chunks received: {chunks_received}')
 
+		# Process any remaining audio in buffer
 		if audio_buffer and total_samples > SAMPLE_RATE * 0.5:
-			audio_data = np.concatenate(audio_buffer)
-			log.info(f'Final flush: {len(audio_data)} samples')
-
-			# Normalize final buffer too
-			peak = float(np.max(np.abs(audio_data)))
-			if peak > 0.001:
-				audio_data = audio_data * (0.9 / peak)
-				log.info(f'Normalized final audio: peak {peak:.4f} -> 0.9')
-
-			try:
-				text = self.transcription_engine.transcribe(audio_data)
-				log.info(f'Final transcription result: "{text}"')
-			except Exception as e:
-				log.exception(f'Final transcription error: {e}')
-				text = ''
-
+			log.info(f'Final flush: {total_samples} samples')
+			text = process_audio_buffer(audio_buffer, self.transcription_engine)
 			if text.strip():
 				self.call_from_thread(self._append_transcript, text)
 
