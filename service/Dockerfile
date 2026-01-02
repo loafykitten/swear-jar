@@ -5,8 +5,7 @@ WORKDIR /app
 
 # Copy workspace structure for dependency resolution
 FROM base AS install
-COPY package.json bun.lock ./
-COPY service/package.json ./service/
+COPY service/package.json service/bun.lock ./
 
 # Install workspace dependencies
 RUN bun install --frozen-lockfile
@@ -25,8 +24,8 @@ FROM oven/bun:1-slim AS release
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=install /app/node_modules ./node_modules
-COPY --from=prerelease /app/service ./service
+COPY --from=install --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=prerelease --chown=bun:bun /app/service ./service
 
 # Create writable data directory for sqlite
 RUN mkdir -p /data && chown bun:bun /data

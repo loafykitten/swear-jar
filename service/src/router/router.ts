@@ -26,7 +26,6 @@ export const registerRoutes = (swearsWorker: Worker) => {
 			}
 
 			if (SwearsRoutingAPI.isMatch(url)) {
-				logger.warn(req.url)
 				return SwearsRoutingAPI.processRequest(
 					req,
 					swearsWorker,
