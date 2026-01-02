@@ -3,12 +3,7 @@ import type { BunRequest } from 'bun'
 import { logger } from '@/utils/logger'
 import { checkApiRateLimit } from '@/utils/rateLimits'
 import { calculateSwearsCost, getPricePerSwear } from '@/utils/swears'
-import {
-	decrementSwears,
-	getSwears,
-	incrementSwears,
-	resetSwears,
-} from '../../data/swears-store'
+import { getSwears, resetSwears, updateSwears } from '../../data/swears-store'
 import { defaultResponse } from '../router'
 
 const validPaths = ['/api/swears']
@@ -62,9 +57,10 @@ const POST = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 	logger.debug('SwearsAPI (POST)')
 
 	const url = new URL(req.url)
-	const updateType = url.searchParams.get('updateType')
-	if (updateType !== 'decrement' && updateType !== 'increment') {
-		const response = 'updateType is malformed in API request'
+
+	const by = parseInt(url.searchParams.get('by') || '')
+	if (Number.isNaN(by) || !Number.isFinite(by)) {
+		const response = 'by is malformed in API request'
 
 		logger.warn(response)
 		return new Response(response, {
@@ -83,9 +79,7 @@ const POST = (req: BunRequest<'/api/swears'>, swearsWorker: Worker) => {
 			status: 400,
 		})
 	}
-
-	const isDecrement = updateType === 'decrement'
-	const result = isDecrement ? decrementSwears() : incrementSwears()
+	const result = updateSwears(by)
 
 	if (!result) {
 		const response = `Issue occurred during updateType`

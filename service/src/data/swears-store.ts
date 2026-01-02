@@ -12,20 +12,12 @@ export const getSwears = () => {
 	return data?.count
 }
 
-const updateSwears = (by: number) => {
+export const updateSwears = (by: number) => {
 	const result = db.query(
       `UPDATE Swears SET count = count + ? WHERE id = 1 AND count + ? >= 0`
     ).run(by, by)
 
 	return result.changes !== 0
-}
-
-export const incrementSwears = () => {
-	return updateSwears(1)
-}
-
-export const decrementSwears = () => {
-	return updateSwears(-1)
 }
 
 export const resetSwears = () => {
