@@ -307,6 +307,12 @@ class VoxAnalysis(App):
 		self.is_recording = False
 		self.audio_capture.stop()
 
+	def action_quit(self) -> None:
+		"""Handle quit action - stop audio before exiting."""
+		if self.is_recording:
+			self.stop_recording()
+		self.exit()
+
 	@work(thread=True, exclusive=True, group='transcription')
 	def _run_transcription_worker(self) -> None:
 		"""Background worker that processes audio and transcribes it."""

@@ -2,17 +2,17 @@
 # One word per line, case-insensitive
 # Lines starting with # are comments
 
+ass
+bastard
+bitch
+cock
+cocksucker
 damn
-crap
-shit
+dick
 fuck
 fucker
-ass
-bitch
-bastard
-motherfucker
-cocksucker
-dick
-cock
 fucking
+motherfucker
+motherfucking
+shit
 shitting
