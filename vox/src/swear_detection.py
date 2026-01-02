@@ -73,3 +73,8 @@ class SwearDetector:
 	def word_count(self) -> int:
 		"""Return number of loaded swear words."""
 		return len(self._swear_words)
+
+	@property
+	def words(self) -> set[str]:
+		"""Return the set of loaded swear words."""
+		return self._swear_words

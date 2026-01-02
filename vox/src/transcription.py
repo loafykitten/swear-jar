@@ -11,6 +11,12 @@ MODEL_SIZE = 'base'
 COMPUTE_TYPE = 'int8'
 DEVICE = 'cpu'
 
+# Prompt to prevent the model from censoring profanity - keep it simple to avoid priming hallucinations
+INITIAL_PROMPT = 'Transcribe verbatim.'
+
+# Threshold for filtering out segments where model detects no speech
+NO_SPEECH_THRESHOLD = 0.6
+
 
 class TranscriptionEngine:
 	"""Wraps faster-whisper for speech-to-text transcription."""
@@ -38,7 +44,10 @@ class TranscriptionEngine:
 		return self._model
 
 	def transcribe(
-		self, audio: np.ndarray, language: str = 'en', use_vad: bool = False
+		self,
+		audio: np.ndarray,
+		language: str = 'en',
+		hotwords: str | None = None,
 	) -> str:
 		"""
 		Transcribe audio buffer to text.
@@ -46,7 +55,7 @@ class TranscriptionEngine:
 		Args:
 			audio: NumPy array of float32 audio samples at 16kHz
 			language: Language code (default: 'en')
-			use_vad: Whether to use Voice Activity Detection (default: False)
+			hotwords: Space-separated words to hint to the model (default: None)
 
 		Returns:
 			Transcribed text string
@@ -58,25 +67,44 @@ class TranscriptionEngine:
 		log.debug(f'Input audio: shape={audio_flat.shape}, dtype={audio_flat.dtype}, peak={np.max(np.abs(audio_flat)):.4f}')
 
 		try:
-			log.debug(f'Calling model.transcribe(vad_filter={use_vad}, language={language})')
+			log.debug(f'Calling model.transcribe(language={language})')
 			segments, info = model.transcribe(
 				audio_flat,
 				language=language,
-				vad_filter=use_vad,
-				vad_parameters={'min_silence_duration_ms': 500} if use_vad else None,
+				# VAD filters out silence before transcription to prevent hallucinations
+				vad_filter=True,
+				vad_parameters={
+					'min_silence_duration_ms': 500,
+					'speech_pad_ms': 200,
+				},
+				initial_prompt=INITIAL_PROMPT,
+				hotwords=hotwords,
+				# Prevent hallucination chains from previous output
+				condition_on_previous_text=False,
+				# Penalize repetitive output like "fuck fuck fuck" or "like subscribe"
+				repetition_penalty=1.1,
+				no_repeat_ngram_size=3,
+				# Skip audio chunks that are likely silence/hallucinations
+				hallucination_silence_threshold=0.5,
 			)
 			log.info(f'Transcribe returned: duration={info.duration:.2f}s, language={info.language}, prob={info.language_probability:.2f}')
 
-			# Force generator evaluation and collect segments
+			# Force generator evaluation and collect segments, filtering by no_speech_prob
 			text_parts = []
 			segment_count = 0
+			skipped_count = 0
 			for segment in segments:
 				segment_count += 1
-				log.debug(f'Segment {segment_count}: "{segment.text}" (start={segment.start:.2f}, end={segment.end:.2f})')
+				# Skip segments where model thinks there's no speech
+				if segment.no_speech_prob > NO_SPEECH_THRESHOLD:
+					skipped_count += 1
+					log.debug(f'Skipping segment {segment_count}: no_speech_prob={segment.no_speech_prob:.2f} > {NO_SPEECH_THRESHOLD}')
+					continue
+				log.debug(f'Segment {segment_count}: "{segment.text}" (no_speech={segment.no_speech_prob:.2f})')
 				text_parts.append(segment.text.strip())
 
 			result = ' '.join(text_parts)
-			log.info(f'Total segments: {segment_count}, result: "{result}"')
+			log.info(f'Total segments: {segment_count}, skipped: {skipped_count}, result: "{result}"')
 			return result
 		except Exception as e:
 			log.exception(f'Transcription exception: {e}')

@@ -361,6 +361,11 @@ class VoxAnalysis(App):
 		assert self.transcription_engine is not None, 'Engine must be loaded'
 		engine = self.transcription_engine
 
+		# Build hotwords string from swear detector's word list
+		hotwords = (
+			' '.join(self.swear_detector.words) if self.swear_detector.words else None
+		)
+
 		worker = get_current_worker()
 		audio_buffer: list[np.ndarray] = []
 		total_samples = 0
@@ -376,7 +381,7 @@ class VoxAnalysis(App):
 				chunks_received += 1
 
 				if total_samples >= SAMPLES_PER_BUFFER:
-					text = process_audio_buffer(audio_buffer, engine)
+					text = process_audio_buffer(audio_buffer, engine, hotwords=hotwords)
 					if text.strip():
 						self.call_from_thread(self._append_transcript, text)
 						self.call_from_thread(self._process_swears, text)
@@ -391,7 +396,7 @@ class VoxAnalysis(App):
 		# Process any remaining audio in buffer
 		if audio_buffer and total_samples > SAMPLE_RATE * 0.5:
 			log.info(f'Final flush: {total_samples} samples')
-			text = process_audio_buffer(audio_buffer, engine)
+			text = process_audio_buffer(audio_buffer, engine, hotwords=hotwords)
 			if text.strip():
 				self.call_from_thread(self._append_transcript, text)
 				self.call_from_thread(self._process_swears, text)

@@ -38,12 +38,14 @@ def normalize_audio(audio_data: np.ndarray, target_peak: float = 0.9) -> np.ndar
 def process_audio_buffer(
 	audio_buffer: list[np.ndarray],
 	transcription_engine: 'TranscriptionEngine',
+	hotwords: str | None = None,
 ) -> str:
 	"""Process accumulated audio buffer and return transcription.
 
 	Args:
 		audio_buffer: List of audio chunks to concatenate and process.
 		transcription_engine: Engine to perform transcription.
+		hotwords: Space-separated words to hint to the model (default: None).
 
 	Returns:
 		Transcribed text, or empty string on error.
@@ -67,7 +69,7 @@ def process_audio_buffer(
 
 	try:
 		log.info('Calling transcription engine...')
-		text = transcription_engine.transcribe(audio_data)
+		text = transcription_engine.transcribe(audio_data, hotwords=hotwords)
 		log.info(f'Transcription result: "{text}" (len={len(text)})')
 		return text
 	except Exception as e:
